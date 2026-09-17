@@ -28,9 +28,16 @@ class Deadline(BaseModel):
     unit: UnitType
 
 
+class CropCategory(str, Enum):
+    DWARF = "dwarf"
+    STANDARD = "standard"
+
+
 class Crop(BaseModel):
     name: str
+    category: Optional[CropCategory] = None
     variety: Optional[str] = None
+    plant_density_per_sqm: Optional[float] = None
 
 
 class ResourceConstraint(BaseModel):
@@ -74,6 +81,21 @@ class Farm(BaseModel):
     location: str
 
 
+class HarvestStateEnum(str, Enum):
+    NOT_READY = "NOT_READY"
+    DEVELOPING = "DEVELOPING"
+    READY = "READY"
+    OVERDUE = "OVERDUE"
+
+
+class HarvestObjective(BaseModel):
+    target_state: HarvestStateEnum
+
+
+class VisionConfig(BaseModel):
+    enabled: bool = False
+
+
 class PhysicalIR(BaseModel):
     version: str = "0.1"
     farm: Farm
@@ -83,3 +105,5 @@ class PhysicalIR(BaseModel):
     deadline: Deadline
     optimization: List[OptimizationObjective] = []
     constraints: List[ResourceConstraint] = []
+    vision: Optional[VisionConfig] = None
+    harvest: Optional[HarvestObjective] = None

@@ -1,7 +1,8 @@
 from enum import Enum
 
-from compiler.ir.models import PhysicalIR
 from pydantic import BaseModel
+
+from compiler.ir.models import PhysicalIR
 
 
 class Severity(str, Enum):

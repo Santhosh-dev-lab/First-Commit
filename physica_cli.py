@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import sys
 
+from compiler.planner.optimizer import ObjectiveWeights, ScenarioOptimizer
 from core.experiments.runner import ExperimentConfig, ExperimentRunner
 from core.safety.engine import SafetyVerifier
 from domains.polyhouse.crops.registry import CropRegistry
@@ -282,6 +283,52 @@ def _cmd_experiment(registry: CropRegistry) -> None:
     print()
 
 
+def _cmd_optimize(registry: CropRegistry) -> None:
+    """Run the ScenarioOptimizer."""
+    _print_header()
+    print("OPTIMIZER: Evaluating Control Policies")
+    print()
+
+    base_config = SimulationConfig(
+        simulation_id="opt-demo",
+        scenario_name="optimizer-test",
+        days=120,
+        dt_hours=2.0,
+        seed=42,
+        zones=[
+            ZoneSimConfig(
+                zone_id="z1",
+                crop_id="dwarf_tomato",
+                area_sqm=500.0,
+                plant_density_per_sqm=15.0,
+                initial_tank_volume_liters=1_000_000.0,
+            )
+        ],
+        initial_temperature_c=22.0,
+        outside_temperature_c=25.0,
+    )
+
+    engine = SimulationEngine(registry)
+    weights = ObjectiveWeights(yield_kg=10.0, water_l=-0.01, energy_kwh=-0.05, stress_penalty=-100.0)
+    optimizer = ScenarioOptimizer(engine, weights)
+
+    print("Running simulations for multiple candidate policies...")
+    plan = optimizer.optimize(base_config)
+
+    print(f"\nOPTIMIZATION COMPLETE")
+    print("-" * 55)
+    print(f"  Best Policy:    {plan.policy_id}")
+    print(f"  Best Score:     {plan.score:.2f}")
+    print(f"  Safe?           {'YES' if plan.is_safe else 'NO'}")
+    print(f"  Yield:          {plan.metrics['yield_kg']:.2f} kg")
+    print(f"  Water:          {plan.metrics['water_l']:.0f} L")
+    print(f"  Energy:         {plan.metrics['energy_kwh']:.1f} kWh")
+    print(f"  Stress Index:   {plan.metrics['stress']:.3f}")
+    if not plan.is_safe:
+        print(f"  Violations:     {len(plan.violations)}")
+    print()
+
+
 def main() -> None:
     registry = CropRegistry.default()
 
@@ -295,6 +342,7 @@ def main() -> None:
         print("  python physica_cli.py compile <yaml_path>")
         print("  python physica_cli.py simulate --multi-crop")
         print("  python physica_cli.py experiment")
+        print("  python physica_cli.py optimize")
         return
 
     cmd = args[0]
@@ -321,6 +369,9 @@ def main() -> None:
 
     elif cmd == "experiment":
         _cmd_experiment(registry)
+
+    elif cmd == "optimize":
+        _cmd_optimize(registry)
 
     else:
         print(f"Unknown command: {cmd}")

@@ -60,16 +60,25 @@ class BaselineControlPolicy(ControlPolicy):
     CropProfile.constraints), not hardcoded here.
     """
 
-    _POLICY_ID = "baseline-rule-based"
-    _VERSION   = "1.0.0"
-    _TEMP_BAND_C     = 2.0    # °C deadband around target
-    _HUMID_BAND_PCT  = 5.0    # %RH deadband
-    _MOISTURE_BAND   = 5.0    # % deadband
-    _CO2_BAND_PPM    = 100.0  # ppm deadband
+    _VERSION   = "1.1.0"
+
+    def __init__(
+        self,
+        policy_id: str = "baseline-rule-based",
+        temp_band_c: float = 2.0,
+        humid_band_pct: float = 5.0,
+        moisture_band: float = 5.0,
+        co2_band_ppm: float = 100.0,
+    ) -> None:
+        self._policy_id = policy_id
+        self._TEMP_BAND_C = temp_band_c
+        self._HUMID_BAND_PCT = humid_band_pct
+        self._MOISTURE_BAND = moisture_band
+        self._CO2_BAND_PPM = co2_band_ppm
 
     @property
     def policy_id(self) -> str:
-        return self._POLICY_ID
+        return self._policy_id
 
     @property
     def version(self) -> str:

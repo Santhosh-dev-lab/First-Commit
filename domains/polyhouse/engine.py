@@ -182,12 +182,14 @@ def _irrigation_step(
     Advance irrigation state.
     Returns: (new_moisture, new_tank, water_consumed_l_this_step)
     """
-    flow_l_per_day = 100.0 if pump_on else 0.0
+    flow_l_per_day = 10000.0 if pump_on else 0.0
     water_added = flow_l_per_day * dt_days
     water_removed = crop_uptake_l_per_day * num_plants * dt_days
     # Tank cannot deliver more than available
     water_added = min(water_added, tank_liters)
-    moisture_delta = (water_added - water_removed) / 100.0 * 100.0
+    # Assume 10L of substrate per plant
+    total_substrate_l = max(1.0, num_plants * 10.0)
+    moisture_delta = ((water_added - water_removed) / total_substrate_l) * 100.0
     new_moisture = max(0.0, min(100.0, moisture_pct + moisture_delta))
     new_tank = max(0.0, tank_liters - water_added)
     return new_moisture, new_tank, water_added

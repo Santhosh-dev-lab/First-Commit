@@ -33,6 +33,8 @@ from pydantic import BaseModel
 
 from domains.polyhouse.crops.base import CropProfile, CropState
 from domains.polyhouse.crops.registry import CropRegistry
+from domains.polyhouse.controllers.base import Controller, ZoneControlContext, ActuatorType, ActionType
+from domains.polyhouse.controllers.baseline import BaselineController
 
 # ---------------------------------------------------------------------------
 # Configuration models
@@ -168,40 +170,6 @@ def _climate_step(
     return new_temp, new_hum
 
 
-def _baseline_actuators(
-    temp_c: float,
-    humidity_pct: float,
-    moisture_pct: float,
-    target_temp: float,
-    target_moisture: float,
-) -> tuple[bool, float, bool, bool, bool]:
-    """
-    Simple rule-based actuator decisions.
-    Returns: (fan_on, vent_pct, heater_on, fogger_on, pump_on)
-    Crop targets come from the profile — not hardcoded.
-    """
-    fan_on = False
-    vent_pct = 0.0
-    heater_on = False
-    fogger_on = False
-
-    if temp_c > target_temp + 2.0:
-        vent_pct = 100.0
-        fan_on = True
-    elif temp_c > target_temp:
-        vent_pct = 50.0
-
-    if temp_c < target_temp - 2.0:
-        heater_on = True
-        vent_pct = 0.0
-
-    if humidity_pct < 50.0:
-        fogger_on = True
-
-    pump_on = moisture_pct < target_moisture
-    return fan_on, vent_pct, heater_on, fogger_on, pump_on
-
-
 def _irrigation_step(
     moisture_pct: float,
     tank_liters: float,
@@ -263,8 +231,13 @@ class SimulationEngine:
               (singleton with all built-in crops).
     """
 
-    def __init__(self, registry: CropRegistry | None = None) -> None:
+    def __init__(
+        self,
+        registry: CropRegistry | None = None,
+        controller: Controller | None = None,
+    ) -> None:
         self._registry = registry or CropRegistry.default()
+        self.controller = controller or BaselineController()
 
     def run(self, config: SimulationConfig) -> SimulationResult:
         """
@@ -314,10 +287,14 @@ class SimulationEngine:
         for step_idx in range(total_steps):
             time_days = step_idx * dt_days
 
-            # Determine actuator decisions per zone (crop-specific targets)
-            zone_actuators: dict[str, tuple[bool, float, bool, bool, bool]] = {}
+            # Build ZoneControlContext for each zone
+            zone_contexts: list[ZoneControlContext] = []
             for z in config.zones:
                 profile = zone_profiles[z.zone_id]
+                c_age = zone_crop_states[z.zone_id].age_days
+                c_stage = zone_crop_states[z.zone_id].stage
+                c_stress = zone_crop_states[z.zone_id].crop_stress_index
+                
                 target_temp = (
                     profile.constraints.temperature.optimal_min
                     + profile.constraints.temperature.optimal_max
@@ -326,10 +303,70 @@ class SimulationEngine:
                     profile.constraints.substrate_moisture.optimal_min
                     + profile.constraints.substrate_moisture.optimal_max
                 ) / 2.0
-                zone_actuators[z.zone_id] = _baseline_actuators(
-                    temp_c, hum_pct, zone_moisture[z.zone_id],
-                    target_temp, target_moisture,
+                target_humidity = (
+                    profile.constraints.humidity.optimal_min
+                    + profile.constraints.humidity.optimal_max
+                ) / 2.0
+                target_co2 = (
+                    profile.constraints.co2_ppm.optimal_min
+                    + profile.constraints.co2_ppm.optimal_max
+                ) / 2.0
+                
+                ctx = ZoneControlContext(
+                    zone_id=z.zone_id,
+                    crop_id=z.crop_id,
+                    temperature_c=temp_c,
+                    humidity_percent=hum_pct,
+                    co2_ppm=co2_ppm,
+                    par_umol_m2_s=par,
+                    substrate_moisture_percent=zone_moisture[z.zone_id],
+                    tank_volume_liters=zone_tank[z.zone_id],
+                    crop_age_days=c_age,
+                    crop_stage=c_stage,
+                    crop_stress_index=c_stress,
+                    target_temperature_c=target_temp,
+                    target_humidity_percent=target_humidity,
+                    target_moisture_percent=target_moisture,
+                    target_co2_ppm=target_co2,
+                    target_par_umol_m2_s=400.0, # Assumed for now
+                    water_available_l=zone_tank[z.zone_id],
+                    energy_available_kwh=999999.0, # Infinite for now
                 )
+                zone_contexts.append(ctx)
+
+            # Get ControlPlan
+            control_plan = self.controller.plan(
+                simulation_id=config.simulation_id,
+                timestep=step_idx,
+                time_days=time_days,
+                zone_contexts=zone_contexts,
+            )
+
+            # Apply actions to simulation inputs
+            zone_actuators: dict[str, tuple[bool, float, bool, bool, bool]] = {}
+            for z in config.zones:
+                zone_actions = control_plan.for_zone(z.zone_id)
+                fan_on = False
+                vent_pct = 0.0
+                heater_on = False
+                fogger_on = False
+                pump_on = False
+                
+                for a in zone_actions:
+                    if a.actuator_type == ActuatorType.FAN and a.action_type == ActionType.SET_ON:
+                        fan_on = True
+                    if a.actuator_type == ActuatorType.HEATER and a.action_type == ActionType.SET_ON:
+                        heater_on = True
+                    if a.actuator_type == ActuatorType.FOGGER and a.action_type == ActionType.SET_ON:
+                        fogger_on = True
+                    if a.actuator_type == ActuatorType.PUMP and a.action_type == ActionType.SET_ON:
+                        pump_on = True
+                    if a.actuator_type == ActuatorType.PUMP and a.action_type == ActionType.SET_OFF:
+                        pump_on = False
+                    if a.actuator_type == ActuatorType.VENT and a.action_type == ActionType.SET_VALUE:
+                        vent_pct = a.target_value * 100.0
+                
+                zone_actuators[z.zone_id] = (fan_on, vent_pct, heater_on, fogger_on, pump_on)
 
             # Use first zone's actuators for shared climate (simplification)
             if config.zones:
@@ -366,11 +403,9 @@ class SimulationEngine:
                     temp_c, hum_pct, co2_ppm, moisture, profile.constraints,
                 )
 
-                # Water available per plant this timestep
-                water_avail_per_plant = (
-                    (z.initial_tank_volume_liters / max(num_plants, 1.0)) * dt_days
-                    if pump_on else 0.0
-                )
+                # Plant draws water from substrate, not directly from the pump.
+                # Assume a max of 2.0 L per plant per day available if substrate is 100% saturated.
+                water_avail_per_plant = (moisture / 100.0) * 2.0 * dt_days
 
                 # Advance crop (generic interface — no crop-specific branching)
                 new_crop_state = profile.model.step(

@@ -31,5 +31,7 @@ strict = true
 packages = [
     "compiler",
     "simulation",
-    "twin"
+    "twin",
+    "domains",
+    "core",
 ]

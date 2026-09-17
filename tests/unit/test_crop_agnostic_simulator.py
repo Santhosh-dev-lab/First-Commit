@@ -145,7 +145,7 @@ def registry_with_test_crop(registry_with_builtins):
 # ---------------------------------------------------------------------------
 
 class TestEngineIsCropAgnostic:
-    def test_engine_source_has_no_crop_names(self):
+    def test_engine_source_has_no_crop_names(self) -> None:
         """
         The SimulationEngine class source must not contain hardcoded
         crop names in executable code (conditional branches etc.).

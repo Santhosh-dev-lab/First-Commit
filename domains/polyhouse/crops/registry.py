@@ -17,6 +17,7 @@ profile  = registry.get("lettuce")      # CropProfile
 
 from __future__ import annotations
 
+import builtins
 import threading
 
 from .base import CropProfile
@@ -110,11 +111,11 @@ class CropRegistry:
         """Return True if crop_id is registered."""
         return crop_id in self._profiles
 
-    def list(self) -> list[str]:
+    def list(self) -> builtins.list[str]:
         """Return sorted list of registered crop_ids."""
         return sorted(self._profiles.keys())
 
-    def all_profiles(self) -> list[CropProfile]:
+    def all_profiles(self) -> builtins.list[CropProfile]:
         """Return all registered CropProfile objects."""
         return [self._profiles[k] for k in self.list()]
 

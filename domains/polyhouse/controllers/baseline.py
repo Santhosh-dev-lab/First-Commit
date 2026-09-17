@@ -34,18 +34,15 @@ without changing the controller interface.
 
 from __future__ import annotations
 
-import uuid
-
 from domains.polyhouse.controllers.base import (
     ActionType,
     ActuatorType,
     ControlAction,
+    Controller,
     ControlPlan,
     ControlPolicy,
-    Controller,
     ZoneControlContext,
 )
-
 
 # ---------------------------------------------------------------------------
 # Baseline control policy (crop-agnostic)

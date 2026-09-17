@@ -1,3 +1,3 @@
-from .gateway import EdgeGateway, EdgeCommand
+from .gateway import EdgeCommand, EdgeGateway
 
-__all__ = ["EdgeGateway", "EdgeCommand"]
+__all__ = ["EdgeCommand", "EdgeGateway"]

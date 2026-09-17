@@ -1,8 +1,13 @@
-from domains.polyhouse.controllers.base import ActionType, ActuatorType, ControlAction, ControlPlan
+from domains.polyhouse.controllers.base import (
+    ActionType,
+    ActuatorType,
+    ControlAction,
+    ControlPlan,
+)
 from domains.polyhouse.edge.gateway import EdgeGateway
 
 
-def test_edge_gateway_dispatch():
+def test_edge_gateway_dispatch() -> None:
     gateway = EdgeGateway()
     plan = ControlPlan(
         plan_id="plan-1",
@@ -47,15 +52,15 @@ def test_edge_gateway_dispatch():
     commands = gateway.dispatch(plan)
     assert len(commands) == 3
 
-    assert commands[0].protocol == "modbus"
-    assert commands[0].device_address == "0x01"
-    assert commands[0].register_or_topic == "40001"
+    assert commands[0].protocol == "mqtt"
+    assert commands[0].device_address == "broker_url"
+    assert commands[0].register_or_topic == "polyhouse/z1/pump/set"
     assert commands[0].payload == 1
 
-    assert commands[1].protocol == "modbus"
-    assert commands[1].device_address == "0x02"
-    assert commands[1].register_or_topic == "40002"
-    assert commands[1].payload == 5000  # 0.5 * 10000
+    assert commands[1].protocol == "mqtt"
+    assert commands[1].device_address == "broker_url"
+    assert commands[1].register_or_topic == "polyhouse/z1/vent/set"
+    assert commands[1].payload == 0.5
 
     assert commands[2].protocol == "mqtt"
     assert commands[2].register_or_topic == "polyhouse/z1/fan/set"

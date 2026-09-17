@@ -165,18 +165,18 @@ class TestBuiltinCrops:
         yield
         CropRegistry.reset_singleton()
 
-    def test_builtins_registered(self):
+    def test_builtins_registered(self) -> None:
         registry = CropRegistry.default()
         assert registry.exists("dwarf_tomato")
         assert registry.exists("lettuce")
         assert registry.exists("cucumber")
 
-    def test_three_distinct_crops(self):
+    def test_three_distinct_crops(self) -> None:
         registry = CropRegistry.default()
         crops = registry.list()
         assert len(crops) >= 3
 
-    def test_crops_have_different_stages(self):
+    def test_crops_have_different_stages(self) -> None:
         registry = CropRegistry.default()
         dt_stages = [s.name for s in registry.get("dwarf_tomato").growth_stage_definitions]
         lt_stages = [s.name for s in registry.get("lettuce").growth_stage_definitions]
@@ -188,7 +188,7 @@ class TestBuiltinCrops:
         assert "GERMINATION" in lt_stages         # lettuce
         assert "FRUITING" in cu_stages            # cucumber-specific
 
-    def test_dynamic_registration_of_new_crop(self):
+    def test_dynamic_registration_of_new_crop(self) -> None:
         """
         Proves a test crop can be registered without modifying core code.
         This is the PHASE 23 'fourth-crop test'.

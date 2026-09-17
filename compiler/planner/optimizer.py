@@ -12,9 +12,15 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from domains.polyhouse.engine import SimulationConfig, SimulationEngine, SimulationResult
-from domains.polyhouse.controllers.base import Controller
-from domains.polyhouse.controllers.baseline import BaselineController, BaselineControlPolicy
+from domains.polyhouse.controllers.baseline import (
+    BaselineController,
+    BaselineControlPolicy,
+)
+from domains.polyhouse.engine import (
+    SimulationConfig,
+    SimulationEngine,
+    SimulationResult,
+)
 
 
 class ObjectiveWeights(BaseModel):
@@ -110,4 +116,6 @@ class ScenarioOptimizer:
             if best_plan is None or plan.score > best_plan.score:
                 best_plan = plan
 
+        if best_plan is None:
+            raise RuntimeError("Optimization failed: no valid policies found.")
         return best_plan

@@ -1,0 +1,31 @@
+version: "0.1"
+farm:
+  farm_id: "demo-farm-01"
+  location: "Netherlands"
+polyhouse:
+  polyhouse_id: "ph-1"
+  zones:
+    - zone_id: "z1"
+      area_sqm: 1000
+  sensors:
+    - sensor_id: "s1"
+      type: "temperature"
+      zone_id: "z1"
+  actuators:
+    - actuator_id: "a1"
+      type: "fan"
+      zone_id: "z1"
+crop:
+  name: "Tomato"
+  category: "dwarf"
+  plant_density_per_sqm: 15.0
+objective:
+  type: "yield"
+  target: 1000
+  unit: "kg"
+deadline:
+  value: 120
+  unit: "days"
+optimization:
+  - minimize_water
+  - minimize_energy

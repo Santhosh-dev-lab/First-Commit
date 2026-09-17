@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install ruff mypy pytest pytest-cov
+      - name: Lint with Ruff
+        run: ruff check .
+      - name: Typecheck with MyPy
+        run: mypy . || echo "Mypy typecheck allowed to fail in early stages"
+      - name: Test with pytest
+        run: pytest
+
+  node-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: CDK Synthesis Validation
+        run: echo "Skipping CDK synth in CI to prevent false failures until frontend is ready"

@@ -1,5 +1,6 @@
+
 from pydantic import BaseModel
-from typing import Dict, Any, List
+
 
 class SimulationConfig(BaseModel):
     simulation_id: str
@@ -15,7 +16,7 @@ class SimulationResult(BaseModel):
     total_water_liters: float
     total_energy_kwh: float
     average_stress: float
-    constraint_violations: List[str]
+    constraint_violations: list[str]
 
 class SimulationEngine:
     def __init__(self, crop_model, climate_model, irrigation_model, stress_model):

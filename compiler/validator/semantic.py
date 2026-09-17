@@ -1,7 +1,8 @@
 from enum import Enum
-from pydantic import BaseModel
-from typing import List, Optional
+
 from compiler.ir.models import PhysicalIR
+from pydantic import BaseModel
+
 
 class Severity(str, Enum):
     INFO = "INFO"
@@ -12,12 +13,12 @@ class Diagnostic(BaseModel):
     code: str
     severity: Severity
     message: str
-    location: Optional[str] = None
-    suggested_resolution: Optional[str] = None
+    location: str | None = None
+    suggested_resolution: str | None = None
 
 class ValidationResult(BaseModel):
     is_valid: bool
-    diagnostics: List[Diagnostic]
+    diagnostics: list[Diagnostic]
 
 class SemanticValidator:
     def validate(self, ir: PhysicalIR) -> ValidationResult:

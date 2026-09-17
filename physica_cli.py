@@ -1,8 +1,8 @@
-import yaml
 import sys
-from compiler.ir.models import PhysicalIR
-from simulation.polyhouse.engine import SimulationEngine, SimulationConfig
+
 from compiler.planner.optimizer import HeuristicOptimizer
+from simulation.polyhouse.engine import SimulationConfig, SimulationEngine
+
 
 def main():
     if len(sys.argv) < 3:

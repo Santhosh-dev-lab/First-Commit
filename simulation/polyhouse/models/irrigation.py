@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class IrrigationState(BaseModel):
     substrate_moisture_percent: float
     tank_volume_liters: float

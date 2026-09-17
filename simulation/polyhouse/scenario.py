@@ -1,5 +1,6 @@
 from .engine import SimulationConfig
 
+
 class ScenarioEngine:
     def generate_scenarios(self, base_config: SimulationConfig) -> list[SimulationConfig]:
         scenarios = []

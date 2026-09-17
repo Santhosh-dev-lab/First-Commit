@@ -1,6 +1,6 @@
 from enum import Enum
+
 from pydantic import BaseModel
-from typing import Optional
 
 
 class GrowthStage(str, Enum):
@@ -25,7 +25,7 @@ class Provenance(str, Enum):
 class ParameterMetadata(BaseModel):
     value: float
     provenance: Provenance
-    reference: Optional[str] = None
+    reference: str | None = None
 
 
 class DwarfTomatoModelParameters(BaseModel):

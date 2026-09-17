@@ -1,5 +1,6 @@
-from simulation.polyhouse.models.environment import EnvironmentState, ActuatorState
+from simulation.polyhouse.models.environment import ActuatorState, EnvironmentState
 from simulation.polyhouse.models.irrigation import IrrigationState
+
 
 class BaselineController:
     def __init__(self, target_temp_c: float = 24.0, trigger_moisture_percent: float = 60.0):

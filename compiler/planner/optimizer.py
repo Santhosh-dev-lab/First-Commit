@@ -1,5 +1,5 @@
-from typing import List, Dict
 from .baseline import BaselineController
+
 
 class Policy(str):
     BASELINE_STANDARD = "BASELINE_STANDARD"
@@ -7,7 +7,7 @@ class Policy(str):
     BASELINE_ENERGY_SAVER = "BASELINE_ENERGY_SAVER"
 
 class ControlPlan:
-    def __init__(self, policy: str, metrics: Dict[str, float]):
+    def __init__(self, policy: str, metrics: dict[str, float]):
         self.policy = policy
         self.metrics = metrics
         self.is_safe = True
@@ -21,7 +21,7 @@ class HeuristicOptimizer:
             Policy.BASELINE_ENERGY_SAVER: BaselineController(target_temp_c=26.0, trigger_moisture_percent=60.0)
         }
         
-        best_policy = None
+        best_policy = ""
         best_score = float('-inf')
         best_metrics = {}
         
@@ -47,7 +47,7 @@ class HeuristicOptimizer:
                 
         return ControlPlan(policy=best_policy, metrics=best_metrics)
 
-    def _mock_simulate_policy(self, name: str) -> Dict[str, float]:
+    def _mock_simulate_policy(self, name: str) -> dict[str, float]:
         if name == Policy.BASELINE_STANDARD:
             return {"predicted_yield_kg": 1000.0, "water_used_liters": 5000.0, "energy_kwh": 1000.0}
         elif name == Policy.BASELINE_WATER_SAVER:

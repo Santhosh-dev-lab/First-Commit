@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -35,9 +35,9 @@ class CropCategory(str, Enum):
 
 class Crop(BaseModel):
     name: str
-    category: Optional[CropCategory] = None
-    variety: Optional[str] = None
-    plant_density_per_sqm: Optional[float] = None
+    category: CropCategory | None = None
+    variety: str | None = None
+    plant_density_per_sqm: float | None = None
 
 
 class ResourceConstraint(BaseModel):
@@ -71,9 +71,9 @@ class Actuator(BaseModel):
 
 class Polyhouse(BaseModel):
     polyhouse_id: str
-    zones: List[Zone]
-    sensors: List[Sensor]
-    actuators: List[Actuator]
+    zones: list[Zone]
+    sensors: list[Sensor]
+    actuators: list[Actuator]
 
 
 class Farm(BaseModel):
@@ -103,7 +103,7 @@ class PhysicalIR(BaseModel):
     crop: Crop
     objective: Objective
     deadline: Deadline
-    optimization: List[OptimizationObjective] = []
-    constraints: List[ResourceConstraint] = []
-    vision: Optional[VisionConfig] = None
-    harvest: Optional[HarvestObjective] = None
+    optimization: list[OptimizationObjective] = []
+    constraints: list[ResourceConstraint] = []
+    vision: VisionConfig | None = None
+    harvest: HarvestObjective | None = None

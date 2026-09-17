@@ -1,8 +1,9 @@
-from typing import Dict
-from .core import SensorReading, SensorQuality, TwinCurrentState
+
+from .core import SensorQuality, SensorReading, TwinCurrentState
+
 
 class StateEstimator:
-    def estimate(self, raw_telemetry: Dict[str, SensorReading], current_time: str) -> TwinCurrentState:
+    def estimate(self, raw_telemetry: dict[str, SensorReading], current_time: str) -> TwinCurrentState:
         # Simplistic estimator mapping raw telemetry to state
         # In a real system, would handle filtering and anomaly detection
         env_state = {}

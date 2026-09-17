@@ -31,7 +31,7 @@ class HeuristicOptimizer:
             "energy": -0.05
         }
         
-        for name, controller in policies.items():
+        for name in policies.keys():
             # In a real engine, we'd run a fast forward simulation
             # Here we mock the metric evaluation
             metrics = self._mock_simulate_policy(name)

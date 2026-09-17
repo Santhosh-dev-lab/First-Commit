@@ -10,7 +10,7 @@ def main():
         return
         
     cmd = sys.argv[1]
-    yaml_path = sys.argv[2]
+    _ = sys.argv[2]
     
     if cmd == "compile":
         # MOCK compilation for vertical slice
@@ -30,7 +30,7 @@ def main():
         result = engine.run(config)
         
         optimizer = HeuristicOptimizer()
-        plan = optimizer.optimize(None, None, None)
+        _ = optimizer.optimize(None, None, None)
         
         print("SIMULATION\nPASS\n")
         print("OPTIMIZATION\nPASS\n")

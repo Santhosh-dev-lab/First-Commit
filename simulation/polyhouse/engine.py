@@ -1,40 +1,27 @@
+"""
+simulation/polyhouse/engine.py — COMPATIBILITY WRAPPER
 
-from pydantic import BaseModel
+This module re-exports from the canonical implementation at
+domains.polyhouse.engine so that existing code importing from this
+path continues to work unchanged.
 
+New code should import directly from domains.polyhouse.engine.
+This wrapper will remain for backward compatibility.
+"""
 
-class SimulationConfig(BaseModel):
-    simulation_id: str
-    scenario_name: str
-    days: int
-    dt_hours: float
-    seed: int
+# Re-export everything from the canonical engine
+from domains.polyhouse.engine import (
+    SimulationConfig,
+    SimulationEngine,
+    SimulationResult,
+    ZoneResult,
+    ZoneSimConfig,
+)
 
-class SimulationResult(BaseModel):
-    simulation_id: str
-    provenance_hash: str
-    final_yield_kg: float
-    total_water_liters: float
-    total_energy_kwh: float
-    average_stress: float
-    constraint_violations: list[str]
-
-class SimulationEngine:
-    def __init__(self, crop_model, climate_model, irrigation_model, stress_model):
-        self.crop_model = crop_model
-        self.climate_model = climate_model
-        self.irrigation_model = irrigation_model
-        self.stress_model = stress_model
-        
-    def run(self, config: SimulationConfig) -> SimulationResult:
-        # Simplistic stub. A real engine loops dt over config.days
-        
-        # MOCK result for vertical slice
-        return SimulationResult(
-            simulation_id=config.simulation_id,
-            provenance_hash="commit-12345",
-            final_yield_kg=980.5,
-            total_water_liters=4500.0,
-            total_energy_kwh=1100.0,
-            average_stress=0.15,
-            constraint_violations=[]
-        )
+__all__ = [
+    "SimulationConfig",
+    "SimulationEngine",
+    "SimulationResult",
+    "ZoneResult",
+    "ZoneSimConfig",
+]

@@ -11,31 +11,53 @@ class SensorQuality(str, Enum):
     INVALID = "INVALID"
     MISSING = "MISSING"
 
+
+class StateSource(str, Enum):
+    OBSERVED = "OBSERVED"
+    ESTIMATED = "ESTIMATED"
+    PREDICTED = "PREDICTED"
+    SIMULATED = "SIMULATED"
+    CONFIGURED = "CONFIGURED"
+    CALIBRATED = "CALIBRATED"
+
+
+class StateVariable(BaseModel):
+    value: float
+    unit: str
+    source: StateSource
+
+
 class SensorReading(BaseModel):
     value: float
     unit: str
-    timestamp: str
+    timestamp: float
     quality: SensorQuality
+
 
 class TwinConfiguration(BaseModel):
     polyhouse_id: str
     zones: dict[str, Any]
     devices: dict[str, Any]
 
+
 class TwinCurrentState(BaseModel):
-    timestamp: str
-    environment: dict[str, float]
-    crop_biomass_kg: float
-    substrate_moisture: float
+    timestamp: float
+    environment: dict[str, StateVariable]
+    crop_biomass_kg: StateVariable
+    substrate_moisture: StateVariable
+    tank_volume: StateVariable | None = None
+
 
 class TwinPredictedState(BaseModel):
     forecast_horizon_days: float
-    environment_forecast: dict[str, float]
-    predicted_yield_kg: float
-    predicted_water_consumption_liters: float
+    environment_forecast: dict[str, StateVariable]
+    predicted_yield_kg: StateVariable
+    predicted_water_consumption_liters: StateVariable
+
 
 class PolyhouseTwin(BaseModel):
     configuration: TwinConfiguration
     current_state: TwinCurrentState | None = None
     predicted_state: TwinPredictedState | None = None
     measurements: dict[str, SensorReading] = {}
+

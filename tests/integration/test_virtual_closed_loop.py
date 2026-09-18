@@ -16,6 +16,9 @@ def setup_db():
     init_db()
     conn = get_db()
     cursor = conn.cursor()
+    # Disable rate limiter during tests to prevent 429 errors from /api/auth/register
+    from app.main import limiter
+    limiter.enabled = False
     cursor.execute("DELETE FROM virtual_farm_runs")
     cursor.execute("DELETE FROM command_execution_log")
     cursor.execute("DELETE FROM telemetry_records")

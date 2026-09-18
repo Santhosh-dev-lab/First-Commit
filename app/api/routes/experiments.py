@@ -1,12 +1,12 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from schemas.experiments import FarmObjective, ObjectiveWeights
 from app.api.deps import get_authorized_farm, get_current_user
-from app.services.experiment_service import ExperimentService, experiment_repo
 from app.services.auth_service import UserInfo
+from app.services.experiment_service import ExperimentService, experiment_repo
+from schemas.experiments import FarmObjective, ObjectiveWeights
 
 router = APIRouter()
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+
 from domains.polyhouse.controllers.base import (
     ActionType,
     ActuatorType,

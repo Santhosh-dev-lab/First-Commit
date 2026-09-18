@@ -1,7 +1,8 @@
-from typing import Any
 from twin.core import SensorQuality
-from .models import VirtualSensorConfig
+
 from .failures import FailureInjector
+from .models import VirtualSensorConfig
+
 
 class VirtualSensor:
     """

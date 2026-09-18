@@ -1,14 +1,18 @@
-import time
-import json
-from domains.polyhouse.engine import SimulationEngine, SimulationEngineState, SimulationConfig
 from domains.edge.models import TelemetryEnvelope, TelemetrySource
+from domains.polyhouse.engine import (
+    SimulationConfig,
+    SimulationEngine,
+    SimulationEngineState,
+)
 from twin.core import SensorQuality
-from .models import VirtualFarmRuntimeConfig, RuntimeStatus
+
+from .actuators import VirtualActuatorFactory
 from .clock import SimulationClock
+from .gateway import VirtualEdgeGateway
+from .models import RuntimeStatus, VirtualFarmRuntimeConfig
 from .scenarios import ScenarioEngine
 from .sensors import VirtualSensor
-from .actuators import VirtualActuatorFactory
-from .gateway import VirtualEdgeGateway
+
 
 class VirtualFarmRuntime:
     def __init__(self, config: VirtualFarmRuntimeConfig):
@@ -19,7 +23,10 @@ class VirtualFarmRuntime:
         self.status = RuntimeStatus.STOPPED
         
         # We use a NoOp controller so the SimulationEngine doesn't overwrite manually injected commands
-        from domains.polyhouse.controllers.base import Controller, ControlPlan, ActionType
+        from domains.polyhouse.controllers.base import (
+            Controller,
+            ControlPlan,
+        )
         class NoOpController(Controller):
             def plan(self, simulation_id, timestep, time_days, zone_contexts):
                 return ControlPlan(plan_id="noop", simulation_id=simulation_id, timestep=timestep, time_days=time_days, actions=[])
@@ -87,9 +94,9 @@ class VirtualFarmRuntime:
                 act = self.engine_state.device_registry.get_actuator(cmd.device_id)
                 if act:
                     ctype = cmd.command_type.value
-                    if ctype.endswith("_ON") or ctype.endswith("_OPEN"):
+                    if ctype.endswith(("_ON", "_OPEN")):
                         act.execute(1.0)
-                    elif ctype.endswith("_OFF") or ctype.endswith("_CLOSE"):
+                    elif ctype.endswith(("_OFF", "_CLOSE")):
                         act.execute(0.0)
                     else:
                         act.execute(cmd.parameters.get("value", 1.0))
@@ -120,9 +127,8 @@ class VirtualFarmRuntime:
             elif s_cfg.sensor_type == "humidity": true_val = self.engine_state.hum_pct
             elif s_cfg.sensor_type == "co2": true_val = self.engine_state.co2_ppm
             elif s_cfg.sensor_type == "par": true_val = self.engine_state.par
-            elif s_cfg.sensor_type == "moisture": 
-                if s_cfg.zone_id and s_cfg.zone_id in self.engine_state.zone_moisture:
-                    true_val = self.engine_state.zone_moisture[s_cfg.zone_id]
+            elif s_cfg.sensor_type == "moisture" and s_cfg.zone_id and s_cfg.zone_id in self.engine_state.zone_moisture:
+                true_val = self.engine_state.zone_moisture[s_cfg.zone_id]
                     
             obs_val, qual = sensor.read(true_val)
             if qual == SensorQuality.MISSING:

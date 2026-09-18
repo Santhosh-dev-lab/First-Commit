@@ -1,25 +1,26 @@
-import uuid
-import time
 import hashlib
+import time
+import uuid
 from typing import Any
 
+from app.db.database import get_db
+from app.services.physica_service import PhysicaApplicationService
+from app.services.repositories import plan_repo
+from core.safety.engine import SafetyVerifier
+from domains.polyhouse.controllers.baseline import BaselineController
+from domains.polyhouse.controllers.factory import get_policy
+from domains.polyhouse.crops.registry import CropRegistry
+from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
 from schemas.experiments import (
+    CandidateResult,
+    CandidateStrategy,
+    ExperimentRecord,
     FarmObjective,
     ObjectiveWeights,
-    CandidateStrategy,
-    CandidateResult,
-    ExperimentRecord
 )
-from schemas.tools import SafetyCheckResult, ControlPlanProposal, SimulationResult as ToolsSimulationResult
-from domains.polyhouse.engine import SimulationEngine, SimulationConfig, ZoneSimConfig
-from domains.polyhouse.controllers.factory import get_policy
-from domains.polyhouse.controllers.baseline import BaselineController
-from domains.polyhouse.crops.registry import CropRegistry
-from core.safety.engine import SafetyVerifier, SafetySeverity
-from app.services.repositories import plan_repo, execution_repo
-from app.services.farm_service import FarmService
-from app.services.physica_service import PhysicaApplicationService
-from app.db.database import get_db
+from schemas.tools import ControlPlanProposal, SafetyCheckResult
+from schemas.tools import SimulationResult as ToolsSimulationResult
+
 
 # We'll use a global in-memory repository as requested
 class InMemoryExperimentRepository:
@@ -65,7 +66,7 @@ class ExperimentService:
         elif objective == FarmObjective.STRESS_MINIMIZATION:
             ADAPTIVE_IRRIGATION = {"1": {"stress_threshold": 0.1}}
 
-        for k, v in ADAPTIVE_IRRIGATION.items():
+        for v in ADAPTIVE_IRRIGATION.values():
             candidates.append(CandidateStrategy(
                 strategy_id=f"{base_id_prefix}_adaptive_{idx}",
                 policy_id="ADAPTIVE_IRRIGATION",
@@ -75,7 +76,7 @@ class ExperimentService:
             ))
             idx += 1
 
-        for k, v in REDUCED_IRRIGATION.items():
+        for v in REDUCED_IRRIGATION.values():
             candidates.append(CandidateStrategy(
                 strategy_id=f"{base_id_prefix}_reduced_{idx}",
                 policy_id="REDUCED_IRRIGATION",
@@ -85,7 +86,7 @@ class ExperimentService:
             ))
             idx += 1
 
-        for k, v in PULSE_IRRIGATION.items():
+        for v in PULSE_IRRIGATION.values():
             candidates.append(CandidateStrategy(
                 strategy_id=f"{base_id_prefix}_pulse_{idx}",
                 policy_id="PULSE_IRRIGATION",
@@ -326,7 +327,7 @@ class ExperimentService:
             co2 = state.get("co2_ppm", 400.0)
             moist = state.get("substrate_moisture_percent", 65.0)
             
-            profile = self.crop_registry.get(z["crop_id"])
+            self.crop_registry.get(z["crop_id"])
             zone_contexts.append(ZoneControlContext(
                 zone_id=z["id"],
                 crop_id=z["crop_id"],

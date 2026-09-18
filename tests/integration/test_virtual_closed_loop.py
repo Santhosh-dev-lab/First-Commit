@@ -1,16 +1,15 @@
-import pytest
-import asyncio
 import time
 import uuid
 
-from httpx import AsyncClient, ASGITransport
+import pytest
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
-from app.main import app
 from app.db.database import get_db, init_db
+from app.main import app
 from app.services.repositories import execution_repo, plan_repo
-from domains.polyhouse.engine import SimulationEngine
 from schemas.tools import ExecutionState
+
 
 @pytest.fixture(autouse=True)
 def setup_db():
@@ -86,7 +85,7 @@ async def test_virtual_closed_loop(setup_db):
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies, headers=headers) as ac:
         # Start virtual farm
-        resp = await ac.post(f"/api/simulation/runtime/start", json={
+        resp = await ac.post("/api/simulation/runtime/start", json={
             "run_id": "test_run_id",
             "farm_id": farm_id,
             "scenario": "NORMAL",
@@ -103,7 +102,7 @@ async def test_virtual_closed_loop(setup_db):
         assert resp.status_code == 200, resp.json()
         
         # Advance simulation
-        resp = await ac.post(f"/api/simulation/runtime/step", json={"dt_hours": 1.0})
+        resp = await ac.post("/api/simulation/runtime/step", json={"dt_hours": 1.0})
         assert resp.status_code == 200
         
         # Verify Telemetry exists
@@ -112,10 +111,9 @@ async def test_virtual_closed_loop(setup_db):
         dashboard = resp.json()
         assert len(dashboard["telemetry"]) > 0
         
-        z1_moisture_before = None
         for z in dashboard["zones"]:
             if z["zone_id"] == "Zone 1":
-                z1_moisture_before = z["moisture_percent"]
+                z["moisture_percent"]
                 
         # Generate proposal
         resp = await ac.post(f"/api/intent?farm_id={farm_id}", json={"text": "Reduce water stress in Zone 1"})
@@ -168,7 +166,7 @@ async def test_virtual_closed_loop(setup_db):
         
         # Advance simulation to see physical change (call multiple times since each step is 1 hr)
         for _ in range(4):
-            resp = await ac.post(f"/api/simulation/runtime/step")
+            resp = await ac.post("/api/simulation/runtime/step")
             assert resp.status_code == 200
         
         # Verify Telemetry ingested and Observation occurred
@@ -178,10 +176,9 @@ async def test_virtual_closed_loop(setup_db):
         # Assert Zone 1 changed, Zone 2 unchanged (or appropriately simulated)
         resp = await ac.get("/api/dashboard")
         dashboard = resp.json()
-        z1_moisture_after = None
         for z in dashboard["zones"]:
             if z["zone_id"] == "Zone 1":
-                z1_moisture_after = z["moisture_percent"]
+                z["moisture_percent"]
                 
         # Since it's a dummy test with arbitrary values for now, we just assert OBSERVED passed.
         # Check command replay

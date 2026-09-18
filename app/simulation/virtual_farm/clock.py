@@ -1,5 +1,7 @@
 import time
+
 from .models import ClockMode
+
 
 class SimulationClock:
     def __init__(self, mode: ClockMode, start_time: float | None = None, speedup_factor: float = 60.0):

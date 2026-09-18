@@ -1,7 +1,10 @@
 from enum import Enum
 from typing import Any
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
+
 from domains.polyhouse.engine import ZoneSimConfig
+
 
 class ClockMode(str, Enum):
     REALTIME = "REALTIME"

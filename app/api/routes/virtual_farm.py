@@ -1,14 +1,10 @@
-import uuid
-from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import get_authorized_farm
 from app.simulation.virtual_farm.models import (
-    VirtualFarmRuntimeConfig, 
-    RuntimeStatusResponse, 
+    RuntimeStatusResponse,
     ScenarioType,
-    ClockMode,
-    RuntimeStatus
+    VirtualFarmRuntimeConfig,
 )
 from app.simulation.virtual_farm.runtime import VirtualFarmRuntime
 

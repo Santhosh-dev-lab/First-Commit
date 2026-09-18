@@ -303,7 +303,7 @@ class PhysicaApplicationService:
             if row:
                 try:
                     state = json.loads(row['measurements'])
-                except:
+                except json.JSONDecodeError:
                     pass
             
             # Fetch crop_id for the zone
@@ -389,7 +389,7 @@ class PhysicaApplicationService:
         execution_repo.save(execution_id, execution_record)
         
         # Get connection mode
-        farm_data = FarmService.get_user_farm("admin") # Hack since we don't pass user_id here, but we can query DB
+        FarmService.get_user_farm("admin") # Hack since we don't pass user_id here, but we can query DB
         
         conn = get_db()
         cursor = conn.cursor()

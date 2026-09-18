@@ -1,8 +1,9 @@
 from enum import Enum
 from typing import Any
+
 from pydantic import BaseModel, Field
 
-from schemas.tools import SimulationResult, SafetyCheckResult
+from schemas.tools import SafetyCheckResult, SimulationResult
 
 
 class FarmObjective(str, Enum):

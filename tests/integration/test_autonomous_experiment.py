@@ -1,13 +1,13 @@
 import time
-import uuid
-import pytest
-import asyncio
-from httpx import AsyncClient, ASGITransport
-from fastapi.testclient import TestClient
 
-from app.main import app
+import pytest
+from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
+
 from app.db.database import get_db, init_db
+from app.main import app
 from app.services.experiment_service import experiment_repo
+
 
 @pytest.fixture(autouse=True)
 def setup_db():
@@ -84,7 +84,7 @@ def setup_db():
 
 @pytest.mark.asyncio
 async def test_water_shortage_demonstration(setup_db):
-    cookies, farm_id = setup_db
+    cookies, _farm_id = setup_db
     headers = {"X-Test-Bypass": "true"}
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies, headers=headers) as ac:
@@ -132,7 +132,7 @@ async def test_water_shortage_demonstration(setup_db):
 
 @pytest.mark.asyncio
 async def test_reproducibility(setup_db):
-    cookies, farm_id = setup_db
+    cookies, _farm_id = setup_db
     headers = {"X-Test-Bypass": "true"}
     
     payload = {
@@ -163,7 +163,7 @@ async def test_reproducibility(setup_db):
 
 @pytest.mark.asyncio
 async def test_unsafe_rejection(setup_db):
-    cookies, farm_id = setup_db
+    cookies, _farm_id = setup_db
     headers = {"X-Test-Bypass": "true"}
     
     # If a strategy reduces water so much that crop stress hits limits or temperatures spike (scenario extreme)
@@ -198,7 +198,7 @@ async def test_unsafe_rejection(setup_db):
 
 @pytest.mark.asyncio
 async def test_execute_experiment(setup_db):
-    cookies, farm_id = setup_db
+    cookies, _farm_id = setup_db
     headers = {"X-Test-Bypass": "true"}
     
     payload = {

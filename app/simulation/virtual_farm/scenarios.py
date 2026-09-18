@@ -1,5 +1,5 @@
-from typing import Any
 from .models import ScenarioType, VirtualFarmRuntimeConfig
+
 
 class ScenarioEngine:
     """
@@ -29,15 +29,9 @@ class ScenarioEngine:
         elif config.scenario == ScenarioType.GATEWAY_OFFLINE:
             # Applied in gateway
             pass
-        elif config.scenario == ScenarioType.PUMP_FAILURE:
+        elif config.scenario == ScenarioType.PUMP_FAILURE or config.scenario == ScenarioType.VALVE_FAILURE:
             # Applied in actuators
             pass
-        elif config.scenario == ScenarioType.VALVE_FAILURE:
-            # Applied in actuators
-            pass
-        elif config.scenario == ScenarioType.NETWORK_LATENCY:
-            # Applied in gateway
-            pass
-        elif config.scenario == ScenarioType.PACKET_LOSS:
+        elif config.scenario == ScenarioType.NETWORK_LATENCY or config.scenario == ScenarioType.PACKET_LOSS:
             # Applied in gateway
             pass

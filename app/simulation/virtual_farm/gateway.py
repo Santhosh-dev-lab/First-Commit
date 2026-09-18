@@ -1,12 +1,13 @@
-from collections.abc import Callable
+import sqlite3
 import time
 import uuid
-import sqlite3
+from collections.abc import Callable
 
+from app.db.database import get_db
+from app.services.telemetry_ingestion import telemetry_ingestion_service
 from domains.edge.gateway import EdgeGateway
 from domains.edge.models import CommandEnvelope, GatewayHeartbeat, TelemetryEnvelope
-from app.services.telemetry_ingestion import telemetry_ingestion_service
-from app.db.database import get_db
+
 
 class VirtualEdgeGateway(EdgeGateway):
     def __init__(self, farm_id: str, client_id: str = "virtual-gateway"):

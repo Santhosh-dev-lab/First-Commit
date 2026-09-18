@@ -1,7 +1,9 @@
 import time
+
 import pytest
 
-from domains.polyhouse.engine import SimulationEngine, SimulationConfig, ZoneSimConfig
+from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
+
 
 def test_engine_run_vs_step():
     # Setup common config

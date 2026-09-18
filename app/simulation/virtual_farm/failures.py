@@ -1,6 +1,7 @@
-from typing import Any
 import random
-from .models import VirtualSensorConfig, ScenarioType
+
+from .models import VirtualSensorConfig
+
 
 class FailureInjector:
     """

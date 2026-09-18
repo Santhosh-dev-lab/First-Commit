@@ -1,8 +1,7 @@
-import re
 from typing import Any
 
-from schemas.experiments import FarmObjective, ObjectiveWeights
 from app.services.experiment_service import ExperimentService
+from schemas.experiments import FarmObjective, ObjectiveWeights
 
 
 class DecisionAgent:

@@ -1,7 +1,9 @@
 from typing import Any
-from domains.edge.gateway import EdgeGateway
+
 from app.simulation.virtual_farm.gateway import VirtualEdgeGateway
+from domains.edge.gateway import EdgeGateway
 from infrastructure.edge.aws_iot_gateway import AwsIoTGateway
+
 
 class GatewayFactory:
     @staticmethod

@@ -1,7 +1,9 @@
+import time
+
 from app.services.repositories import execution_repo, plan_repo
 from domains.edge.models import TelemetryEnvelope
 from schemas.tools import ExecutionState
-import time
+
 
 class ReconciliationService:
     def observe(self, telemetry: TelemetryEnvelope) -> None:

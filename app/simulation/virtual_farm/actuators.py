@@ -1,5 +1,7 @@
 from domains.polyhouse.devices.simulated import SimulatedPump, SimulatedVent
+
 from .models import VirtualActuatorConfig
+
 
 class VirtualActuatorFactory:
     @staticmethod

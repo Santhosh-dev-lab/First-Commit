@@ -18,6 +18,7 @@ def mock_get_authorized_farm():
 
 import pytest
 
+
 @pytest.fixture(autouse=True)
 def override_dependencies():
     app.dependency_overrides[get_current_user] = mock_get_current_user

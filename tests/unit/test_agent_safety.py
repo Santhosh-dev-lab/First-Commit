@@ -56,8 +56,8 @@ def test_invalid_crop_rejected() -> None:
 
 def test_tool_authority_rejects_execution_tool() -> None:
     # 5. Agent requests EXECUTION tool -> ToolAuthority rejects
-    from tools.authority import ToolAuthority
     import tools.definitions  # noqa: F401
+    from tools.authority import ToolAuthority
     
     agent_tools = ToolAuthority.get_agent_tools()
     tool_names = [func.__name__ for func in agent_tools]

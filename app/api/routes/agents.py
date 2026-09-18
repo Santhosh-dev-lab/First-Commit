@@ -1,13 +1,16 @@
-from fastapi import APIRouter
+from typing import Any
 
+from fastapi import APIRouter, Depends
+
+from app.api.deps import get_authorized_farm
 from app.api.schemas import AgentTraceResponse, IntentRequest, IntentResponse
 from app.services.physica_service import physica_service
 
 router = APIRouter()
 
 @router.post("/intent", response_model=IntentResponse)
-def submit_intent(req: IntentRequest) -> IntentResponse:
-    return physica_service.submit_intent(req)
+def submit_intent(req: IntentRequest, farm_data: dict[str, Any] = Depends(get_authorized_farm)) -> IntentResponse:
+    return physica_service.submit_intent(req, farm_data["farm"]["id"])
 
 @router.get("/agents/{run_id}", response_model=AgentTraceResponse)
 def get_agent_trace(run_id: str) -> AgentTraceResponse:

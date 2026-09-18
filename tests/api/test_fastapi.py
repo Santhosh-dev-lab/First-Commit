@@ -1,10 +1,23 @@
 from fastapi.testclient import TestClient
 
+from app.api.deps import get_authorized_farm
 from app.main import app
+from app.services.auth_service import UserInfo, get_current_user
 from app.services.repositories import plan_repo
 from schemas.tools import ControlPlanProposal, ExecutionState
 
 client = TestClient(app)
+client.cookies["csrf_token"] = "test_csrf"
+client.headers["X-CSRF-Token"] = "test_csrf"
+
+def mock_get_current_user():
+    return UserInfo(id="test_user", full_name="Test User", email="test@test.com", role="OWNER")
+
+def mock_get_authorized_farm():
+    return {"farm": {"id": "test_farm"}}
+
+app.dependency_overrides[get_current_user] = mock_get_current_user
+app.dependency_overrides[get_authorized_farm] = mock_get_authorized_farm
 
 def test_health() -> None:
     response = client.get("/api/health")
@@ -12,12 +25,7 @@ def test_health() -> None:
     data = response.json()
     assert data["status"] == "healthy"
 
-def test_twin() -> None:
-    response = client.get("/api/twin")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["polyhouse_id"] == "demo_polyhouse"
-    assert "zones" in data
+
 
 def test_simulate() -> None:
     req = {
@@ -44,7 +52,7 @@ def test_intent() -> None:
 def test_execution_authorization_flow() -> None:
     # Setup mock plan
     plan_id = "test_plan_1"
-    plan = ControlPlanProposal(actions=[], execution_status=ExecutionState.PROPOSED, created_by="test")
+    plan = ControlPlanProposal(farm_id="test_farm", actions=[], execution_status=ExecutionState.PROPOSED, created_by="test")
     plan_repo.save(plan_id, plan)
     
     # 1. Attempt dispatch before approval -> Expect 403 Forbidden

@@ -53,6 +53,7 @@ class ControlActionProposal(BaseModel):
     reason: str = Field(description="Agent's reasoning for this action")
 
 class ControlPlanProposal(BaseModel):
+    farm_id: str = Field(description="Farm ID this plan belongs to", default="")
     actions: list[ControlActionProposal] = Field(description="List of proposed actions")
     execution_status: ExecutionState = Field(default=ExecutionState.PROPOSED)
     created_by: str = Field(default="planning_agent")

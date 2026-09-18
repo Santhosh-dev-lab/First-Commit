@@ -36,8 +36,8 @@ export default function Home() {
         <section className="relative h-screen min-h-[700px] flex flex-col justify-end pb-12 pt-24 overflow-hidden">
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 z-10 mix-blend-multiply pointer-events-none" />
-            <img src="/hero-bg.jpg" alt="Agricultural field from above" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/60 z-10 pointer-events-none" />
+            <img src="/herosection-polyhouse.png" alt="Agricultural polyhouse from above" className="w-full h-full object-cover" />
           </div>
           
           <div className="relative z-20 max-w-7xl mx-auto px-6 w-full flex flex-col h-full justify-between">

@@ -13,17 +13,17 @@ class ToolAuthority:
     """
     Deterministically enforces which tools agents can access.
     """
-    _registered_tools: ClassVar[dict[str, tuple[Callable, ToolCategory]]] = {}
+    _registered_tools: ClassVar[dict[str, tuple[Callable[..., Any], ToolCategory]]] = {}
     
     @classmethod
-    def register(cls, name: str, category: ToolCategory) -> Callable:
-        def decorator(func: Callable) -> Callable:
+    def register(cls, name: str, category: ToolCategory) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             cls._registered_tools[name] = (func, category)
             return func
         return decorator
 
     @classmethod
-    def get_agent_tools(cls) -> list[Callable]:
+    def get_agent_tools(cls) -> list[Callable[..., Any]]:
         """Returns only tools authorized for agents (READ_ONLY, COMPUTATIONAL, PROPOSAL).
         Strictly excludes EXECUTION tools.
         """

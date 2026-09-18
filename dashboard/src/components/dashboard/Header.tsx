@@ -1,10 +1,11 @@
 "use client"
 
-import { useHealth } from "@/lib/api/client"
+import { useHealth, useDashboard } from "@/lib/api/client"
 import { useEffect, useState } from "react"
 import { Bell, Calendar, ChevronDown, Globe } from "lucide-react"
 
 export function Header() {
+  const { data: snapshot } = useDashboard()
   const { data: health, error } = useHealth()
   const isHealthy = !error && health?.status === "healthy"
   
@@ -20,7 +21,7 @@ export function Header() {
     <header className="h-20 border-b border-white/5 bg-[#0a0a0a] flex items-center justify-between px-6 shrink-0 z-50">
       <div className="flex flex-col justify-center">
         <h1 className="text-xl font-medium text-white flex items-center gap-2">
-          Good morning, Ramesh! <span className="text-emerald-400">🌱</span>
+          Good morning! <span className="text-emerald-400">🌱</span>
         </h1>
         <p className="text-[13px] text-white/50 mt-1">Here's what's happening in your farm today.</p>
       </div>

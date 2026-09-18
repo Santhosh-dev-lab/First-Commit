@@ -19,8 +19,11 @@ import {
   ChevronDown
 } from "lucide-react"
 
+import { useDashboard } from "@/lib/api/client"
+
 export function SidebarNav() {
   const pathname = usePathname()
+  const { data: snapshot } = useDashboard()
 
   const links = [
     { name: "Overview", href: "/", icon: Home },
@@ -86,9 +89,8 @@ export function SidebarNav() {
              <Sprout className="w-5 h-5 text-emerald-400" />
           </div>
           <div className="flex-1 overflow-hidden">
-            <h4 className="text-sm font-semibold text-white truncate">Ramesh Farm</h4>
-            <p className="text-[10px] text-white/50">Farm ID: FARM1234</p>
-            <p className="text-[10px] text-white/50">Area: 24.8 ha</p>
+            <h4 className="text-sm font-semibold text-white truncate">{snapshot?.system?.farm_name || "Your Farm"}</h4>
+            <p className="text-[10px] text-white/50">Active Zones: {snapshot?.zones?.length || 0}</p>
           </div>
           <div className="px-1 text-white/40">
              <ChevronDown className="w-4 h-4" />

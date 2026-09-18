@@ -32,14 +32,14 @@ def setup_db():
     conn.close()
     
     client = TestClient(app)
+    headers = {"X-Test-Bypass": "true"}
+    
     # Register an admin user
     client.post("/api/auth/register", json={
         "full_name": "Admin User",
         "email": "admin@example.com",
         "password": "Password123!"
-    })
-    
-    headers = {"X-Test-Bypass": "true"}
+    }, headers=headers)
     
     # Login
     resp = client.post("/api/auth/login", json={"email": "admin@example.com", "password": "Password123!"}, headers=headers)

@@ -16,8 +16,15 @@ def mock_get_current_user():
 def mock_get_authorized_farm():
     return {"farm": {"id": "test_farm"}}
 
-app.dependency_overrides[get_current_user] = mock_get_current_user
-app.dependency_overrides[get_authorized_farm] = mock_get_authorized_farm
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def override_dependencies():
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    app.dependency_overrides[get_authorized_farm] = mock_get_authorized_farm
+    yield
+    app.dependency_overrides.clear()
 
 def test_health() -> None:
     response = client.get("/api/health")

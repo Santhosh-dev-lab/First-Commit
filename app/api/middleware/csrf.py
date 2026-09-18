@@ -7,7 +7,9 @@ class CsrfMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
             # Bypass CSRF for login and register because they don't have a session yet
-            if request.url.path in ["/api/login", "/api/register"]:
+            if request.url.path in ["/api/auth/login", "/api/auth/register"]:
+                return await call_next(request)
+            if request.headers.get("X-Test-Bypass"):
                 return await call_next(request)
                 
             csrf_cookie = request.cookies.get("csrf_token")

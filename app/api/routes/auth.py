@@ -60,20 +60,13 @@ async def login(request: Request, data: LoginRequest, response: Response):
         raise HTTPException(status_code=401, detail="Invalid email or password")
         
     token, csrf_token = AuthService.create_session(user.id)
-    response.set_cookie(
-        key="session",
-        value=token,
-        httponly=True,
-        samesite="lax",
-        secure=True,
-        max_age=30 * 24 * 60 * 60
-    )
+    _set_auth_cookie(response, token)
     response.set_cookie(
         key="csrf_token",
         value=csrf_token,
         httponly=False,
         samesite="lax",
-        secure=True,
+        secure=os.getenv("PHYSICA_ENV") == "production",
         max_age=30 * 24 * 60 * 60
     )
     return {"user": user.model_dump()}

@@ -3,6 +3,7 @@ import time
 
 from app.db.database import get_db
 from app.services.farm_service import FarmService
+from app.services.reconciliation import reconciliation_service
 from app.services.telemetry_repository import telemetry_repo
 from domains.edge.models import TelemetryEnvelope
 
@@ -63,6 +64,9 @@ class TelemetryIngestionService:
 
         # 5. Save to Repository
         record_id = telemetry_repo.save(envelope)
+        
+        # 6. Reconcile pending commands
+        reconciliation_service.observe(envelope)
         
         return record_id
 

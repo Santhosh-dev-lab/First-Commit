@@ -24,6 +24,7 @@ from app.api.schemas import (
 )
 from app.db.database import get_db
 from app.services.farm_service import FarmService
+from app.services.gateway_factory import gateway_factory
 from app.services.repositories import execution_repo, plan_repo
 from core.safety.engine import SafetyVerifier
 from domains.polyhouse.crops.registry import CropRegistry
@@ -38,7 +39,7 @@ class PhysicaApplicationService:
     def __init__(self) -> None:
         self.crop_registry = CropRegistry.default()
         self.simulation_engine = SimulationEngine(registry=self.crop_registry)
-        self.safety_verifier = SafetyVerifier(rules=[])
+        self.safety_verifier = SafetyVerifier.default(registry=self.crop_registry)
         self.agent_provider = MockAgentProvider()
         
         self._last_tick = {} # map farm_id -> last_tick time
@@ -97,10 +98,10 @@ class PhysicaApplicationService:
         conn.commit()
         conn.close()
 
-    def get_dashboard_snapshot(self, user_id: str) -> DashboardSnapshot:
-        farm_data = FarmService.get_user_farm(user_id)
+    def get_dashboard_snapshot(self, farm_id: str) -> DashboardSnapshot:
+        farm_data = FarmService.get_farm_by_id(farm_id)
         if not farm_data:
-            raise ValueError("Farm not found for user")
+            raise ValueError(f"Farm {farm_id} not found")
             
         farm = farm_data["farm"]
         farm_id = farm["id"]
@@ -212,15 +213,13 @@ class PhysicaApplicationService:
     def submit_intent(self, req: IntentRequest, farm_id: str) -> IntentResponse:
         """Run intent through IntentAgent and semantic validation."""
         structured_intent = self.agent_provider.run_intent_agent(req.text)
+        plan_result = self.agent_provider.run_planning_agent(structured_intent)
         
         plan_id = str(uuid.uuid4())
         
-        proposal = ControlPlanProposal(
-            farm_id=farm_id,
-            actions=[],
-            execution_status=ExecutionState.PROPOSED,
-            created_by="planning_agent"
-        )
+        proposal = plan_result["control_plan"]
+        proposal.farm_id = farm_id
+        
         plan_repo.save(plan_id, proposal)
         
         return IntentResponse(
@@ -287,6 +286,45 @@ class PhysicaApplicationService:
             created_by=plan.created_by
         )
         
+    def validate_plan_safety(self, plan: ControlPlanProposal, farm_id: str) -> bool:
+        # Fetch latest state from digital twin (telemetry_records)
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # We need a unified state for the safety verifier. We'll average or take the latest zone state.
+        # For simplicity, if any zone is unsafe, we reject the plan.
+        is_safe = True
+        violations = []
+        for action in plan.actions:
+            zone_id = action.zone_id
+            cursor.execute("SELECT measurements FROM telemetry_records WHERE farm_id=? AND zone_id=? ORDER BY timestamp DESC LIMIT 1", (farm_id, zone_id))
+            row = cursor.fetchone()
+            state = {}
+            if row:
+                try:
+                    state = json.loads(row['measurements'])
+                except json.JSONDecodeError:
+                    pass
+            
+            # Fetch crop_id for the zone
+            cursor.execute("SELECT crop_id FROM zones WHERE id=? AND farm_id=?", (zone_id, farm_id))
+            crop_row = cursor.fetchone()
+            crop_id = crop_row["crop_id"] if crop_row else None
+            
+            result = self.safety_verifier.verify(state, zone_id=zone_id, crop_id=crop_id)
+            if not result.is_safe:
+                is_safe = False
+                violations.extend(result.violations)
+                break
+                
+        conn.close()
+        
+        if not is_safe:
+            plan.execution_status = ExecutionState.REJECTED
+            return False
+            
+        return True
+
     def approve_plan(self, plan_id: str, farm_id: str, reason: str | None = None) -> PlanResponse:
         plan = plan_repo.get(plan_id)
         if not plan or plan.farm_id != farm_id:
@@ -294,6 +332,10 @@ class PhysicaApplicationService:
             
         if plan.execution_status not in (ExecutionState.PROPOSED, ExecutionState.VALIDATED):
             raise ValueError(f"Invalid state transition from {plan.execution_status} to APPROVED")
+            
+        if not self.validate_plan_safety(plan, farm_id):
+            plan_repo.save(plan_id, plan)
+            raise ValueError("Plan rejected by SafetyEngine due to safety violations")
             
         plan.execution_status = ExecutionState.APPROVED
         plan_repo.save(plan_id, plan)
@@ -336,12 +378,65 @@ class PhysicaApplicationService:
         plan_repo.save(plan_id, plan)
         
         execution_id = str(uuid.uuid4())
-        execution_repo.save(execution_id, {
+        execution_record = {
             "plan_id": plan_id,
+            "farm_id": farm_id,
             "status": "DISPATCHED",
             "dispatched_at": time.time(),
-            "acknowledged_at": None
-        })
+            "acknowledged_at": None,
+            "observed_at": None
+        }
+        execution_repo.save(execution_id, execution_record)
+        
+        # Get connection mode
+        FarmService.get_user_farm("admin") # Hack since we don't pass user_id here, but we can query DB
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT mode FROM farm_connections WHERE farm_id=?", (farm_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        connection_mode = row["mode"] if row else "LOCAL_SIMULATION"
+        gateway = gateway_factory.create_gateway(farm_id, connection_mode)
+        
+        from domains.edge.models import CommandEnvelope, CommandType
+        
+        for action in plan.actions:
+            command_id = f"cmd_{execution_id}_{action.actuator_id}"
+            
+            # map action type
+            cmd_type = CommandType.PUMP_ON
+            if action.action_type == "SET_ON" and "pump" in action.actuator_id.lower():
+                cmd_type = CommandType.PUMP_ON
+            elif action.action_type == "SET_OFF" and "pump" in action.actuator_id.lower():
+                cmd_type = CommandType.PUMP_OFF
+            elif action.action_type == "SET_ON" and "vent" in action.actuator_id.lower():
+                cmd_type = CommandType.VENT_OPEN
+            elif action.action_type == "SET_OFF" and "vent" in action.actuator_id.lower():
+                cmd_type = CommandType.VENT_CLOSE
+            elif action.action_type == "SET_ON" and "valve" in action.actuator_id.lower():
+                cmd_type = CommandType.VALVE_OPEN
+            elif action.action_type == "SET_OFF" and "valve" in action.actuator_id.lower():
+                cmd_type = CommandType.VALVE_CLOSE
+            else:
+                cmd_type = CommandType.PUMP_ON # Fallback
+            
+            envelope = CommandEnvelope(
+                command_id=command_id,
+                farm_id=farm_id,
+                gateway_id=f"gw_{farm_id}",
+                device_id=action.actuator_id,
+                timestamp=time.time(),
+                command_type=cmd_type,
+                parameters={"target_value": action.target_value, "duration_s": action.duration_s}
+            )
+            gateway.send_command(envelope)
+            
+            # Since the command was sent successfully, we rely on the gateway to mark ACKNOWLEDGED, 
+            # but for tests, if it's synchronous local we might see it right away. 
+            # Actually, Rule 1 says: "Gateway.send_command() -> gateway accepts command -> ExecutionRepository transition to ACKNOWLEDGED".
+            # VirtualEdgeGateway should update execution_repo, not us.
         
         return ExecutionResponse(
             execution_id=execution_id,

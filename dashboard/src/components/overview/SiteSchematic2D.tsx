@@ -11,134 +11,153 @@ export function SiteSchematic2D({ twin }: SiteSchematicProps) {
   const zone1 = zones.find((z: any) => z.zone_id === "zone_1")
   const zone2 = zones.find((z: any) => z.zone_id === "zone_2")
 
-  const getStatusColor = (health: string) => {
-    if (health === "CRITICAL") return "bg-red-500/20 border-red-500/50 text-red-400"
-    if (health === "WARNING") return "bg-amber-500/20 border-amber-500/50 text-amber-400"
-    return "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+  const formatVal = (val: number | null | undefined, unit: string = "") => {
+    if (!isOnline || val === null || val === undefined) return "N/A"
+    return `${val.toFixed(1)} ${unit}`.trim()
   }
-  
-  const globalHealthColor = getStatusColor(twin?.sensor_health || "HEALTHY")
 
   return (
-    <div className="w-full flex flex-col md:flex-row gap-6 items-center justify-center py-8">
-      
-      {/* Infrastructure Node (Water / Pump) */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-32 p-4 border border-blue-500/30 bg-blue-500/5 rounded flex flex-col items-center text-center">
-          <div className="text-xl mb-2">🛢️</div>
-          <span className="text-[10px] font-mono uppercase text-white/50">Water Tank</span>
-          <span className="text-sm font-mono text-blue-400 mt-1">{isOnline ? `${twin?.tank_volume_l?.toFixed(0)} L` : "N/A"}</span>
-        </div>
+    <div className="w-full h-full min-h-[400px] flex items-center justify-center p-4">
+      {/* Blueprint Container */}
+      <div className="w-full max-w-4xl border-2 border-white/20 rounded-xl bg-[#030303] relative p-8 shadow-2xl overflow-hidden flex flex-col">
         
-        <div className="w-0.5 h-6 bg-white/20 relative">
-           {pumpOn && <div className="absolute inset-0 bg-blue-500 animate-pulse" />}
-        </div>
-        
-        <div className={`w-32 p-3 border rounded flex flex-col items-center text-center ${pumpOn ? "border-emerald-500/50 bg-emerald-500/10" : "border-white/10 bg-white/5"}`}>
-          <div className="text-xl mb-1">⚙️</div>
-          <span className="text-[10px] font-mono uppercase text-white/50">Pump P-01</span>
-          <span className={`text-xs font-mono mt-1 font-bold ${pumpOn ? "text-emerald-400" : "text-white/30"}`}>
-            {isOnline ? twin?.pump_state : "N/A"}
-          </span>
-        </div>
-      </div>
-      
-      {/* Connection Pipe */}
-      <div className="h-0.5 w-16 md:w-24 bg-white/20 relative hidden md:block">
-        {pumpOn && <div className="absolute inset-0 bg-blue-500 animate-pulse" />}
-      </div>
+        {/* Background Grid */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)', backgroundSize: '30px 30px', backgroundPosition: 'center center' }}></div>
 
-      {/* Main Polyhouse Blueprint Node */}
-      <div className="flex-1 max-w-2xl border-2 border-white/10 rounded-xl p-6 bg-[#030303] relative">
-        <div className="absolute top-4 left-4">
-           <span className="text-xs font-mono uppercase text-white/30 tracking-widest">Polyhouse Outline</span>
-        </div>
-        
-        <div className="absolute top-4 right-4">
-           <span className={`px-2 py-1 text-[10px] font-mono border rounded ${globalHealthColor}`}>
-             SYSTEM: {isOnline ? (twin?.sensor_health || "HEALTHY") : "OFFLINE"}
-           </span>
+        {/* Header */}
+        <div className="flex justify-between items-start relative z-10 mb-8">
+          <div>
+            <h2 className="text-sm font-mono tracking-[0.2em] text-white/50 uppercase">Floor Plan</h2>
+            <h1 className="text-2xl font-light text-white tracking-widest mt-1">POLYHOUSE MAIN</h1>
+          </div>
+          <div className={`px-3 py-1.5 border rounded-sm font-mono text-xs tracking-widest ${isOnline ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
+            SYSTEM: {isOnline ? (twin?.sensor_health || "HEALTHY") : "OFFLINE"}
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-col md:flex-row gap-6 h-full">
+        {/* Zones Container */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+          
           {/* Zone 1 */}
-          <div className="flex-1 border border-dashed border-white/20 rounded bg-white/[0.02] p-4 flex flex-col justify-between min-h-[250px]">
-             <div className="flex justify-between items-start">
-               <div>
-                 <h3 className="font-mono font-bold text-white tracking-widest">ZONE 01</h3>
-                 <span className="text-[10px] font-mono text-emerald-400 uppercase mt-1 block">
-                   {isOnline && zone1 ? zone1.crop_id.replace("_", " ") : "N/A"}
-                 </span>
-               </div>
-               {isOnline && (
-                 <span className="text-[10px] font-mono text-white/50 border border-white/10 px-1.5 py-0.5 rounded">
-                   SENSORS
-                 </span>
-               )}
-             </div>
-             
-             <div className="grid grid-cols-2 gap-y-4 gap-x-2 mt-6">
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Temp</span>
-                  <span className="font-mono text-sm">{isOnline ? `${twin.temperature_c.toFixed(1)} °C` : "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Humidity</span>
-                  <span className="font-mono text-sm">{isOnline ? `${twin.humidity_percent.toFixed(1)} %` : "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Moisture</span>
-                  <span className="font-mono text-sm">{isOnline ? `${twin.substrate_moisture_percent.toFixed(1)} %` : "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Irrigation</span>
-                  <span className={`font-mono text-sm font-bold ${pumpOn ? 'text-blue-400' : 'text-white/30'}`}>
-                    {isOnline ? (pumpOn ? "FLOWING" : "IDLE") : "N/A"}
-                  </span>
-                </div>
-             </div>
+          <div className="border border-white/20 bg-emerald-900/10 rounded-lg p-6 relative group overflow-hidden flex flex-col">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div>
+                <h3 className="font-mono text-lg font-bold text-white tracking-widest">ZONE 01</h3>
+                <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-widest mt-1 block">
+                  {isOnline && zone1 ? zone1.crop_id.replace("_", " ") : "WAITING FOR DATA"}
+                </span>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+            </div>
+
+            {/* Simulated Crop Rows */}
+            <div className="flex-1 flex flex-col justify-center gap-3 opacity-30 py-4 relative z-10">
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+            </div>
+
+            {/* Zone Data Overlay */}
+            <div className="grid grid-cols-2 gap-4 mt-6 relative z-10 bg-black/40 p-4 rounded border border-white/5 backdrop-blur-sm">
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">Temp</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone1?.temperature_c, "°C")}</span>
+              </div>
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">Humidity</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone1?.humidity_percent, "%")}</span>
+              </div>
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">Moisture</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone1?.substrate_moisture_percent, "%")}</span>
+              </div>
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">VPD</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone1?.vpd_kpa, "kPa")}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Zone 2 */}
+          <div className="border border-white/20 bg-emerald-900/10 rounded-lg p-6 relative group overflow-hidden flex flex-col">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <div>
+                <h3 className="font-mono text-lg font-bold text-white tracking-widest">ZONE 02</h3>
+                <span className="font-mono text-[10px] text-emerald-400 uppercase tracking-widest mt-1 block">
+                  {isOnline && zone2 ? zone2.crop_id.replace("_", " ") : "WAITING FOR DATA"}
+                </span>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+            </div>
+
+            {/* Simulated Crop Rows */}
+            <div className="flex-1 flex flex-col justify-center gap-3 opacity-30 py-4 relative z-10">
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+              <div className="h-1.5 w-full bg-emerald-500 rounded-full" />
+            </div>
+
+            {/* Zone Data Overlay */}
+            <div className="grid grid-cols-2 gap-4 mt-6 relative z-10 bg-black/40 p-4 rounded border border-white/5 backdrop-blur-sm">
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">Temp</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone2?.temperature_c, "°C")}</span>
+              </div>
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">Humidity</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone2?.humidity_percent, "%")}</span>
+              </div>
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">Moisture</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone2?.substrate_moisture_percent, "%")}</span>
+              </div>
+              <div>
+                <span className="block text-[9px] text-white/40 uppercase font-mono tracking-widest">VPD</span>
+                <span className="font-mono text-sm text-white">{formatVal(zone2?.vpd_kpa, "kPa")}</span>
+              </div>
+            </div>
           </div>
           
-          {/* Zone 2 */}
-          <div className="flex-1 border border-dashed border-white/20 rounded bg-white/[0.02] p-4 flex flex-col justify-between min-h-[250px]">
-             <div className="flex justify-between items-start">
-               <div>
-                 <h3 className="font-mono font-bold text-white tracking-widest">ZONE 02</h3>
-                 <span className="text-[10px] font-mono text-emerald-400 uppercase mt-1 block">
-                   {isOnline && zone2 ? zone2.crop_id.replace("_", " ") : "N/A"}
-                 </span>
-               </div>
-               {isOnline && (
-                 <span className="text-[10px] font-mono text-white/50 border border-white/10 px-1.5 py-0.5 rounded">
-                   SENSORS
-                 </span>
-               )}
+        </div>
+
+        {/* Infrastructure Footer */}
+        <div className="mt-8 pt-6 border-t border-white/10 relative z-10 flex items-center gap-6">
+          <div className="flex items-center gap-4 bg-black/40 p-3 rounded border border-white/5 backdrop-blur-sm">
+             <div className="w-8 h-8 rounded bg-blue-500/20 border border-blue-500/50 flex items-center justify-center text-blue-400">
+               🛢️
              </div>
-             
-             <div className="grid grid-cols-2 gap-y-4 gap-x-2 mt-6">
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Temp</span>
-                  <span className="font-mono text-sm">{isOnline ? `${twin.temperature_c.toFixed(1)} °C` : "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Humidity</span>
-                  <span className="font-mono text-sm">{isOnline ? `${twin.humidity_percent.toFixed(1)} %` : "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Moisture</span>
-                  <span className="font-mono text-sm">{isOnline ? `${twin.substrate_moisture_percent.toFixed(1)} %` : "N/A"}</span>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-white/40 uppercase font-mono">Irrigation</span>
-                  <span className={`font-mono text-sm font-bold ${pumpOn ? 'text-blue-400' : 'text-white/30'}`}>
-                    {isOnline ? (pumpOn ? "FLOWING" : "IDLE") : "N/A"}
-                  </span>
-                </div>
+             <div>
+               <span className="block text-[9px] font-mono tracking-widest uppercase text-white/50">Main Tank</span>
+               <span className="font-mono text-sm text-white">
+                 {isOnline && twin?.tank_volume_l !== undefined ? `${twin.tank_volume_l.toFixed(0)} L` : "N/A"}
+               </span>
+             </div>
+          </div>
+
+          <div className="flex-1 h-px bg-white/20 relative">
+             {pumpOn && <div className="absolute inset-0 bg-blue-500 animate-pulse" />}
+          </div>
+
+          <div className="flex items-center gap-4 bg-black/40 p-3 rounded border border-white/5 backdrop-blur-sm">
+             <div className={`w-8 h-8 rounded border flex items-center justify-center ${pumpOn ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-white/5 border-white/20 text-white/50'}`}>
+               ⚙️
+             </div>
+             <div>
+               <span className="block text-[9px] font-mono tracking-widest uppercase text-white/50">Pump P-01</span>
+               <span className={`font-mono text-sm font-bold ${pumpOn ? 'text-emerald-400' : 'text-white/50'}`}>
+                 {isOnline ? twin?.pump_state : "N/A"}
+               </span>
              </div>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   )
 }

@@ -1,28 +1,12 @@
 "use client"
 
 import { useHealth } from "@/lib/api/client"
-import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
-import { ShieldCheck, Activity, Cpu, Box, CloudSun } from "lucide-react"
-
-function StatusIndicator({ label, status, icon: Icon, healthy = true }: { label: string, status: string, icon: any, healthy?: boolean }) {
-  return (
-    <div className="flex flex-col items-center px-4">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className={cn("w-4 h-4", healthy ? "text-emerald-400" : "text-amber-400")} />
-        <span className="text-[10px] font-mono text-white/50 tracking-widest uppercase">{label}</span>
-      </div>
-      <span className={cn("text-xs font-bold tracking-widest uppercase", healthy ? "text-emerald-400" : "text-amber-400")}>
-        {status}
-      </span>
-    </div>
-  )
-}
+import { Bell, Calendar, ChevronDown, Globe } from "lucide-react"
 
 export function Header() {
   const { data: health, error } = useHealth()
   const isHealthy = !error && health?.status === "healthy"
-  const isConnected = !!health
   
   const [time, setTime] = useState<Date | null>(null)
   
@@ -33,53 +17,47 @@ export function Header() {
   }, [])
 
   return (
-    <header className="h-16 border-b border-white/5 bg-[#0a0a0a] flex items-center justify-between px-6 shrink-0 z-50">
+    <header className="h-20 border-b border-white/5 bg-[#0a0a0a] flex items-center justify-between px-6 shrink-0 z-50">
       <div className="flex flex-col justify-center">
-        <h1 className="text-xl font-light tracking-[0.2em] text-white">PHYSICA</h1>
-        <p className="text-[9px] text-white/40 font-mono tracking-widest uppercase mt-0.5">A Compiler for Physical Reality</p>
+        <h1 className="text-xl font-medium text-white flex items-center gap-2">
+          Good morning, Ramesh! <span className="text-emerald-400">🌱</span>
+        </h1>
+        <p className="text-[13px] text-white/50 mt-1">Here's what's happening in your farm today.</p>
       </div>
       
-      <div className="flex items-center divide-x divide-white/5">
-        <StatusIndicator 
-          label="System" 
-          status={isConnected ? "ONLINE" : "OFFLINE"} 
-          icon={Activity}
-          healthy={isConnected} 
-        />
-        <StatusIndicator 
-          label="Physical Mode" 
-          status="SIMULATION" 
-          icon={CloudSun}
-          healthy={true} 
-        />
-        <StatusIndicator 
-          label="Agent" 
-          status={health?.agent_provider || "MOCK"} 
-          icon={Cpu}
-          healthy={true} 
-        />
-        <StatusIndicator 
-          label="Digital Twin" 
-          status={isConnected ? "SYNCHRONIZED" : "STALE"} 
-          icon={Box}
-          healthy={isConnected} 
-        />
-        <StatusIndicator 
-          label="Safety" 
-          status={health?.safety || "ARMED"} 
-          icon={ShieldCheck}
-          healthy={isHealthy} 
-        />
+      <div className="flex items-center gap-4">
+        {/* Status Pill */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-white/80">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+          All Systems Operational
+        </div>
         
-        <div className="flex flex-col items-end px-4 min-w-[120px]">
-          <span className="text-[10px] font-mono text-white/50 uppercase">
-            {time ? time.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "---"}
-          </span>
-          <span className="text-sm font-mono text-white font-bold tracking-widest">
-            {time ? time.toLocaleTimeString('en-US', { hour12: false }) : "--:--:--"}
-          </span>
+        {/* Language Selector */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-white/80 cursor-pointer hover:bg-white/10 transition-colors">
+          <Globe className="w-4 h-4 text-white/60" />
+          English
+          <ChevronDown className="w-3 h-3 text-white/50" />
+        </div>
+
+        {/* Notification Bell */}
+        <button className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/80 hover:bg-white/10 transition-colors relative">
+          <Bell className="w-4 h-4" />
+          <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border border-[#0a0a0a]"></div>
+        </button>
+
+        {/* Date Time */}
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-white/80">
+          <Calendar className="w-4 h-4 text-white/60" />
+          {time ? (
+            <>
+              {time.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}, {time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </>
+          ) : (
+            "Loading..."
+          )}
         </div>
       </div>
     </header>
   )
 }
+

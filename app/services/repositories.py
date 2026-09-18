@@ -28,6 +28,9 @@ class InMemoryExecutionRepository:
     def get(self, execution_id: str) -> dict[str, Any] | None:
         return self._executions.get(execution_id)
 
+    def get_all(self) -> dict[str, dict[str, Any]]:
+        return self._executions
+
 class InMemoryAgentTraceRepository:
     def __init__(self) -> None:
         self._traces: dict[str, AgentTrace] = {}

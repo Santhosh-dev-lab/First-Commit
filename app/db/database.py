@@ -164,6 +164,18 @@ def init_db():
         executed_at REAL NOT NULL,
         FOREIGN KEY (farm_id) REFERENCES farms(id)
     );
+
+    CREATE TABLE IF NOT EXISTS virtual_farm_runs (
+        id TEXT PRIMARY KEY,
+        farm_id TEXT NOT NULL,
+        config TEXT NOT NULL,
+        status TEXT NOT NULL,
+        current_time REAL NOT NULL,
+        scenario TEXT NOT NULL,
+        created_at REAL NOT NULL,
+        updated_at REAL NOT NULL,
+        FOREIGN KEY (farm_id) REFERENCES farms(id)
+    );
     """)
     conn.commit()
     conn.close()

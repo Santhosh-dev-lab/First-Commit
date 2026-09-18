@@ -16,11 +16,13 @@ from app.api.routes import (
     dashboard,
     devices,
     execution,
+    experiments,
     health,
     onboarding,
     resources,
     simulation,
     twin,
+    virtual_farm,
 )
 
 limiter = Limiter(key_func=get_remote_address)
@@ -79,6 +81,8 @@ app.include_router(auth.router, tags=["auth"])
 app.include_router(onboarding.router, tags=["onboarding"])
 app.include_router(connectivity.router, prefix="/api", tags=["connectivity"])
 app.include_router(devices.router, prefix="/api", tags=["devices"])
+app.include_router(virtual_farm.router, prefix="/api", tags=["virtual_farm"])
+app.include_router(experiments.router, prefix="/api/experiments", tags=["experiments"])
 
 if __name__ == "__main__":
     import uvicorn

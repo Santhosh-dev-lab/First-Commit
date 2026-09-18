@@ -1,30 +1,31 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Bot, Database, Server, ShieldCheck, Activity, LineChart, ChevronRight } from "lucide-react"
+import { ArrowRight, Bot, Database, Server, ShieldCheck, Activity, LineChart, ChevronDown, MoveDown } from "lucide-react"
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-emerald-500/30">
       {/* Navigation */}
-      <nav className="border-b border-white/10 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white text-black rounded-lg flex items-center justify-center font-bold tracking-tighter">
-              PH
-            </div>
-            <span className="font-semibold tracking-wider text-sm">PHYSICA</span>
+      <nav className="absolute top-0 left-0 right-0 z-50 text-white border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white">
+              <path d="M12 2L2 12L12 22L22 12L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-white/60">
-            <Link href="#product" className="hover:text-white transition-colors">Product</Link>
-            <Link href="#technology" className="hover:text-white transition-colors">Technology</Link>
-            <Link href="#research" className="hover:text-white transition-colors">Research</Link>
-            <Link href="#about" className="hover:text-white transition-colors">About</Link>
+          <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
+            <Link href="#products" className="flex items-center gap-1 hover:text-white/80">Products <ChevronDown className="w-3 h-3" /></Link>
+            <Link href="#focus-crops" className="flex items-center gap-1 hover:text-white/80">Focus Crops <ChevronDown className="w-3 h-3" /></Link>
+            <Link href="#use-cases" className="hover:text-white/80">Use Cases</Link>
+            <Link href="#network" className="flex items-center gap-1 hover:text-white/80">Network <ChevronDown className="w-3 h-3" /></Link>
+            <Link href="#learn-more" className="flex items-center gap-1 hover:text-white/80">Learn More <ChevronDown className="w-3 h-3" /></Link>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium hover:text-emerald-400 transition-colors">Sign In</Link>
-            <Link href="/register" className="text-sm font-medium bg-white text-black px-4 py-2 rounded hover:bg-gray-200 transition-colors">
-              Get Started
+          <div className="flex items-center gap-6">
+            <Link href="/login" className="text-sm font-medium hover:text-white/80">Log in</Link>
+            <Link href="/register" className="text-sm font-medium bg-white text-black px-5 py-2.5 rounded-full hover:bg-gray-100 transition-colors">
+              Get a Demo
             </Link>
           </div>
         </div>
@@ -32,75 +33,46 @@ export default function Home() {
 
       <main>
         {/* Hero Section */}
-        <section className="relative pt-32 pb-40 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-900/20 via-[#050505] to-[#050505] -z-10" />
-          <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                A Compiler for Physical Reality
+        <section className="relative h-screen min-h-[700px] flex flex-col justify-end pb-12 pt-24 overflow-hidden">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 z-10 mix-blend-multiply pointer-events-none" />
+            <img src="/hero-bg.jpg" alt="Agricultural field from above" className="w-full h-full object-cover" />
+          </div>
+          
+          <div className="relative z-20 max-w-7xl mx-auto px-6 w-full flex flex-col h-full justify-between">
+            {/* Top area empty for balance */}
+            <div className="flex-1"></div>
+            
+            {/* Lower area with text and buttons */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-8">
+              
+              <div className="lg:col-span-8 order-2 lg:order-1">
+                <h1 className="text-5xl md:text-6xl lg:text-[76px] font-medium leading-[1.1] tracking-tight">
+                  The Most <span className="italic font-light border-b-2 pb-1 border-white">Powerful</span> Field Analytics Platform For Crop Insights
+                </h1>
               </div>
-              <h1 className="text-5xl md:text-7xl font-light tracking-tight leading-[1.1]">
-                Compile intent into <br/>
-                <span className="font-medium text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">physical reality.</span>
-              </h1>
-              <p className="text-lg text-white/60 leading-relaxed max-w-xl">
-                PHYSICA connects intelligent agents with physical models, resource constraints, safety verification, and controlled execution for autonomous physical systems.
-              </p>
-              <div className="flex items-center gap-4 pt-4">
-                <Link href="/register" className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-black bg-white hover:bg-gray-100 transition-colors">
-                  Get Started
-                </Link>
-                <Link href="#product" className="inline-flex items-center justify-center px-6 py-3 border border-white/20 text-base font-medium rounded-lg text-white hover:bg-white/5 transition-colors">
-                  Explore PHYSICA
-                </Link>
+              
+              <div className="lg:col-span-4 order-1 lg:order-2 lg:pb-12 space-y-6">
+                <p className="text-base text-white/90 leading-relaxed max-w-sm ml-auto">
+                  We developed an easy-to-use, easy-to-operate, comprehensive system for gaining insights from drones and satellites. Compatible with drones & machinery, our platform delivers on-the-farm data assimilation.
+                </p>
+                <div className="flex flex-wrap items-center gap-4 ml-auto max-w-sm">
+                  <Link href="/register" className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium rounded-full text-black bg-white hover:bg-gray-100 transition-colors">
+                    Free Trial
+                  </Link>
+                  <Link href="#product" className="inline-flex items-center justify-center px-6 py-3 border border-white/40 text-sm font-medium rounded-full text-white hover:bg-white/10 transition-colors">
+                    See All Product
+                  </Link>
+                </div>
               </div>
             </div>
-            
-            {/* Hero Visual Abstract */}
-            <div className="relative h-[500px] border border-white/10 rounded-2xl bg-black/40 backdrop-blur-xl overflow-hidden shadow-2xl flex items-center justify-center p-8">
-              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
-              
-              <div className="flex flex-col gap-6 relative z-10 w-full max-w-sm">
-                {/* Intent Node */}
-                <div className="p-4 border border-white/10 rounded-xl bg-white/5 backdrop-blur-md flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-white/50 uppercase tracking-wider">User Intent</div>
-                    <div className="text-sm font-medium">"Optimize moisture for vegetative stage"</div>
-                  </div>
-                </div>
-                
-                {/* Connection */}
-                <div className="h-8 border-l border-dashed border-white/20 ml-9" />
-                
-                {/* Physics Node */}
-                <div className="p-4 border border-white/10 rounded-xl bg-white/5 backdrop-blur-md flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Database className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-white/50 uppercase tracking-wider">Deterministic Physics</div>
-                    <div className="text-sm font-medium">Evaluate constraints & solve PDEs</div>
-                  </div>
-                </div>
 
-                {/* Connection */}
-                <div className="h-8 border-l border-dashed border-white/20 ml-9" />
-
-                {/* Safety Node */}
-                <div className="p-4 border border-emerald-500/30 rounded-xl bg-emerald-500/5 backdrop-blur-md flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-emerald-400/70 uppercase tracking-wider">Safety Boundary</div>
-                    <div className="text-sm font-medium">Verify execution against hard rules</div>
-                  </div>
-                </div>
-              </div>
+            {/* Bottom Right Explore */}
+            <div className="flex justify-end text-sm font-medium text-white/80">
+              <Link href="#product" className="flex items-center gap-2 hover:text-white transition-colors">
+                Explore More <MoveDown className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </section>

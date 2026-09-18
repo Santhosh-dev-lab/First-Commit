@@ -1,6 +1,6 @@
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
-from typing import Optional
 
 from app.services.auth_service import AuthService, UserInfo, get_current_user
 

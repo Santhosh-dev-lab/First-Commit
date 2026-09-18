@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import Optional
 
 from app.services.auth_service import UserInfo, get_current_user
 from app.services.onboarding_service import (
+    DeviceConfig,
+    EnvironmentConfig,
+    FarmConfig,
     OnboardingService,
     OnboardingStatus,
-    FarmConfig,
-    EnvironmentConfig,
-    ZoneConfig,
     ResourceConfig,
-    DeviceConfig
+    ZoneConfig,
 )
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])

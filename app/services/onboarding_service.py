@@ -1,39 +1,41 @@
 import uuid
-from typing import Optional, Any
+
 from pydantic import BaseModel
+
 from app.db.database import get_db
+
 
 class FarmConfig(BaseModel):
     name: str
-    organization: Optional[str] = None
-    country: Optional[str] = None
-    region: Optional[str] = None
-    timezone: Optional[str] = None
+    organization: str | None = None
+    country: str | None = None
+    region: str | None = None
+    timezone: str | None = None
 
 class EnvironmentConfig(BaseModel):
     type: str
     area_sqm: float
-    length_m: Optional[float] = None
-    width_m: Optional[float] = None
-    height_m: Optional[float] = None
+    length_m: float | None = None
+    width_m: float | None = None
+    height_m: float | None = None
 
 class ZoneConfig(BaseModel):
     name: str
     area_sqm: float
-    crop_id: Optional[str] = None
-    growth_stage: Optional[str] = None
+    crop_id: str | None = None
+    growth_stage: str | None = None
 
 class ResourceConfig(BaseModel):
-    tank_capacity_l: Optional[float] = None
-    current_water_l: Optional[float] = None
-    energy_source: Optional[str] = None
+    tank_capacity_l: float | None = None
+    current_water_l: float | None = None
+    energy_source: str | None = None
 
 class DeviceConfig(BaseModel):
-    zone_id: Optional[str] = None
+    zone_id: str | None = None
     name: str
     type: str
-    capability: Optional[str] = None
-    mode: Optional[str] = "SIMULATED"
+    capability: str | None = None
+    mode: str | None = "SIMULATED"
 
 class OnboardingStatus(BaseModel):
     completed: bool

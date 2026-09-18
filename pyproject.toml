@@ -27,6 +27,8 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+[tool.ruff.lint]
+ignore = ["B008"]
 
 [tool.mypy]
 strict = true

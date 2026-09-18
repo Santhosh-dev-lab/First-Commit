@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+
 from app.api.schemas import DashboardSnapshot
 from app.services.auth_service import UserInfo, get_current_user
 from app.services.physica_service import physica_service

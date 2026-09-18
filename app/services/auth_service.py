@@ -1,12 +1,13 @@
 import hashlib
-import os
 import sqlite3
 import time
 import uuid
-from typing import Optional, Any
-from fastapi import Request, HTTPException, Cookie, Depends
+
+from fastapi import Cookie, HTTPException
 from pydantic import BaseModel
+
 from app.db.database import get_db
+
 
 class UserInfo(BaseModel):
     id: str
@@ -50,7 +51,7 @@ class AuthService:
             conn.close()
 
     @staticmethod
-    def authenticate_user(email: str, password: str) -> Optional[UserInfo]:
+    def authenticate_user(email: str, password: str) -> UserInfo | None:
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("SELECT id, full_name, email, password_hash FROM users WHERE email = ?", (email,))
@@ -90,7 +91,7 @@ class AuthService:
         conn.close()
         
     @staticmethod
-    def get_user_from_token(token: str) -> Optional[UserInfo]:
+    def get_user_from_token(token: str) -> UserInfo | None:
         if not token:
             return None
             
@@ -114,7 +115,7 @@ class AuthService:
         return UserInfo(id=row['id'], full_name=row['full_name'], email=row['email'])
 
 
-def get_current_user(session: Optional[str] = Cookie(None)) -> UserInfo:
+def get_current_user(session: str | None = Cookie(None)) -> UserInfo:
     if not session:
         raise HTTPException(status_code=401, detail="Not authenticated")
         

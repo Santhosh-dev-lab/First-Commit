@@ -157,7 +157,10 @@ class PhysicaApplicationService:
         
     def get_dashboard_snapshot(self, user_id: str) -> Any:
         from app.api.schemas import (
-            DashboardSnapshot, SystemStatus, ZoneSummary, ResourceSummary, AlertSummary, PlanResponse
+            DashboardSnapshot,
+            ResourceSummary,
+            SystemStatus,
+            ZoneSummary,
         )
         from app.db.database import get_db
         
@@ -237,7 +240,7 @@ class PhysicaApplicationService:
         
         # Get active plans
         all_plans = plan_repo.get_all()
-        active_plans = [self.get_plan(p_id) for p_id in all_plans.keys()]
+        active_plans = [self.get_plan(p_id) for p_id in all_plans]
         
         return DashboardSnapshot(
             system=system,

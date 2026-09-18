@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import agents, execution, health, resources, simulation, twin
+from app.api.routes import agents, execution, health, resources, simulation, twin, dashboard, auth, onboarding
 
 app = FastAPI(
     title="PHYSICA Application Service",
@@ -25,6 +25,9 @@ app.include_router(agents.router, prefix="/api", tags=["agents"])
 app.include_router(simulation.router, prefix="/api", tags=["simulation"])
 app.include_router(execution.router, prefix="/api", tags=["execution"])
 app.include_router(resources.router, prefix="/api", tags=["resources"])
+app.include_router(dashboard.router, prefix="/api", tags=["dashboard"])
+app.include_router(auth.router, tags=["auth"])
+app.include_router(onboarding.router, tags=["onboarding"])
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

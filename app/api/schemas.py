@@ -123,3 +123,50 @@ class SafetyResponse(BaseModel):
     plan_id: str
     is_safe: bool
     violations: list[str]
+
+# Dashboard Unified Models
+class SystemStatus(BaseModel):
+    is_online: bool
+    physical_mode: str
+    agent_provider: str
+    digital_twin: str
+    safety: str
+    last_sync_timestamp: float
+    farm_name: str | None = None
+
+class ZoneSummary(BaseModel):
+    zone_id: str
+    crop_id: str
+    area_sqm: float
+    growth_stage: str | None
+    temperature_c: float | None
+    humidity_percent: float | None
+    moisture_percent: float | None
+    stress_index: float | None
+    irrigation_status: str | None
+    sensor_health: str | None
+    status: str
+
+class ResourceSummary(BaseModel):
+    tank_volume_l: float | None
+    requested_water_l: float
+    delivered_water_l: float
+    unmet_water_demand_l: float
+    remaining_water_l: float
+
+class AlertSummary(BaseModel):
+    id: str
+    severity: str
+    category: str
+    message: str
+    zone_id: str | None
+    timestamp: float
+
+class DashboardSnapshot(BaseModel):
+    system: SystemStatus
+    zones: list[ZoneSummary]
+    resources: ResourceSummary
+    telemetry: list[TelemetryResponse]
+    alerts: list[AlertSummary]
+    agent_trace: AgentTraceResponse | None
+    active_plans: list[PlanResponse]

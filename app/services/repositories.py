@@ -15,6 +15,9 @@ class InMemoryPlanRepository:
     def get(self, plan_id: str) -> ControlPlanProposal | None:
         return self._plans.get(plan_id)
 
+    def get_all(self) -> dict[str, ControlPlanProposal]:
+        return self._plans
+
 class InMemoryExecutionRepository:
     def __init__(self) -> None:
         self._executions: dict[str, dict[str, Any]] = {}

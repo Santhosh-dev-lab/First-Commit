@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, twin, agents, simulation, execution, resources
+from app.api.routes import agents, execution, health, resources, simulation, twin
 
 app = FastAPI(
     title="PHYSICA Application Service",

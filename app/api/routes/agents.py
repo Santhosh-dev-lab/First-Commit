@@ -1,6 +1,7 @@
 from fastapi import APIRouter
+
+from app.api.schemas import AgentTraceResponse, IntentRequest, IntentResponse
 from app.services.physica_service import physica_service
-from app.api.schemas import IntentRequest, IntentResponse, AgentTraceResponse
 
 router = APIRouter()
 
@@ -10,8 +11,9 @@ def submit_intent(req: IntentRequest) -> IntentResponse:
 
 @router.get("/agents/{run_id}", response_model=AgentTraceResponse)
 def get_agent_trace(run_id: str) -> AgentTraceResponse:
-    from app.services.repositories import agent_trace_repo
     from fastapi import HTTPException
+
+    from app.services.repositories import agent_trace_repo
     
     trace = agent_trace_repo.get(run_id)
     if not trace:

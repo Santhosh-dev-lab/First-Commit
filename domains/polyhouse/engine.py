@@ -33,10 +33,10 @@ from domains.polyhouse.edge.gateway import EdgeGateway
 from twin.core import (
     PolyhouseTwin,
     SensorReading,
+    StateSource,
+    StateVariable,
     TwinConfiguration,
     TwinCurrentState,
-    StateVariable,
-    StateSource,
 )
 from twin.state_estimator import StateEstimator
 from twin.telemetry import TelemetryMessage, TelemetryValidator
@@ -405,11 +405,11 @@ class SimulationEngine:
                     },
                     crop_biomass_kg=StateVariable(value=0.0, unit="kg", source=StateSource.ESTIMATED),
                     substrate_moisture=StateVariable(
-                        value=zone_moisture[list(zone_moisture.keys())[0]] if zone_moisture else 0.0, 
+                        value=zone_moisture[next(iter(zone_moisture.keys()))] if zone_moisture else 0.0, 
                         unit="%", source=StateSource.OBSERVED
                     ),
                     tank_volume=StateVariable(
-                        value=zone_tank[list(zone_tank.keys())[0]] if zone_tank else 0.0,
+                        value=zone_tank[next(iter(zone_tank.keys()))] if zone_tank else 0.0,
                         unit="L", source=StateSource.OBSERVED
                     )
                 )

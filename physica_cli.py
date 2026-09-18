@@ -17,13 +17,12 @@ from __future__ import annotations
 
 import sys
 from typing import Any
-from domains.polyhouse.controllers.base import ControlPlan
-from typing import Any
 
 from agents.base import MockAgentProvider
 from compiler.planner.optimizer import ObjectiveWeights, ScenarioOptimizer
 from core.experiments.runner import ExperimentConfig, ExperimentRunner
 from core.safety.engine import SafetyVerifier
+from domains.polyhouse.controllers.base import ControlPlan
 from domains.polyhouse.crops.registry import CropRegistry
 from domains.polyhouse.engine import (
     SimulationConfig,
@@ -437,15 +436,15 @@ def _cmd_demo_planning(registry: CropRegistry) -> None:
     print("Pump -> ON")
     print(f"Duration -> {commands[0].payload} units\n")
     
+    from domains.polyhouse.controllers.base import Controller
     from domains.polyhouse.engine import (
         SimulationConfig,
         SimulationEngine,
         ZoneSimConfig,
     )
-    from domains.polyhouse.controllers.base import Controller
     
     class FixedPlanController(Controller):
-        def plan(self, simulation_id: str, timestep: int, time_days: float, zone_contexts: list[Any]) -> "ControlPlan":
+        def plan(self, simulation_id: str, timestep: int, time_days: float, zone_contexts: list[Any]) -> ControlPlan:
             from domains.polyhouse.controllers.base import ControlPlan
             # Only return the plan on the first timestep, then empty
             if timestep == 0:
@@ -463,13 +462,12 @@ def _cmd_demo_planning(registry: CropRegistry) -> None:
     )
     sim_result = engine.run(sim_config)
     
-    final_moisture = sim_result.zone_results[0].trajectory_points  # proxy for change if moisture isn't surfaced directly, wait we can extract actual moisture from twin if we hook it, but for demo we can print the engine metric.
     # Actually engine returns cumulative water.
     consumed = sim_result.total_water_liters
     
     print("[TELEMETRY]")
     print(f"Water flow -> {consumed:.1f} L consumed")
-    print(f"Substrate moisture -> updated via physics engine telemetry\n")
+    print("Substrate moisture -> updated via physics engine telemetry\n")
     
     final_twin = sim_result.extra.get("final_twin")
     sm = 0.0
@@ -524,7 +522,11 @@ def _cmd_demo_whatif(registry: CropRegistry) -> None:
     print("[AGENT] 1. Planning Agent constructing candidate scenarios (BASELINE vs WATER_LIMITED)...")
     print("[SIMULATION] 2. Executing deterministic simulations for both scenarios...\n")
     
-    from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
+    from domains.polyhouse.engine import (
+        SimulationConfig,
+        SimulationEngine,
+        ZoneSimConfig,
+    )
     engine = SimulationEngine(registry)
     
     # Baseline Scenario

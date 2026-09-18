@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
 from pydantic import BaseModel, Field
+
 
 class IntentRequest(BaseModel):
     text: str = Field(description="Natural language instruction for the farm")

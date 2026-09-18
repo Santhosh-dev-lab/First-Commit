@@ -1,10 +1,13 @@
 import pytest
-from schemas.tools import ControlPlanProposal, ControlActionProposal, ExecutionState
-from compiler.planner.control_plan import ControlPlanBuilder
-from domains.polyhouse.edge.gateway import EdgeGateway
-from domains.polyhouse.controllers.base import ControlPlan, ControlAction, ActuatorType, ActionType
+
+from domains.polyhouse.controllers.base import (
+    ControlPlan,
+)
 from domains.polyhouse.crops.registry import CropRegistry
-from domains.polyhouse.engine import SimulationEngine, SimulationConfig, ZoneSimConfig
+from domains.polyhouse.edge.gateway import EdgeGateway
+from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
+from schemas.tools import ControlPlanProposal, ExecutionState
+
 
 def test_control_plan_proposal_gateway_rejection() -> None:
     # 4. ControlPlanProposal cannot reach EdgeGateway.
@@ -56,7 +59,7 @@ def test_execution_state_transitions() -> None:
     plan.metadata["execution_status"] = ExecutionState.PROPOSED.value
     
     gateway = EdgeGateway()
-    commands = gateway.dispatch(plan)
+    gateway.dispatch(plan)
     
     # Gateway dispatch immediately marks DISPATCHED
     assert plan.metadata["execution_status"] == ExecutionState.DISPATCHED.value

@@ -2,21 +2,33 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import List, Dict, Any, Tuple
+from typing import Any
 
-from domains.polyhouse.crops.registry import CropRegistry
-from domains.polyhouse.engine import SimulationEngine, SimulationConfig, ZoneSimConfig
-from core.safety.engine import SafetyVerifier
-from compiler.planner.optimizer import ScenarioOptimizer, ObjectiveWeights
 from agents.base import MockAgentProvider
-
-from schemas.tools import ControlPlanProposal, AgentContext, Evidence, StructuredIntent, ExecutionState, SimulationResult
-from app.services.repositories import plan_repo, execution_repo, agent_trace_repo
 from app.api.schemas import (
-    IntentRequest, IntentResponse, SimulationRequest, SimulationResponse, 
-    WhatIfRequest, WhatIfResponse, PlanResponse, TwinResponse, ZoneResponse, 
-    TelemetryResponse, AgentTraceResponse, EvidenceResponse, ActionResponse, ExecutionResponse, ResourceResponse
+    ActionResponse,
+    ExecutionResponse,
+    IntentRequest,
+    IntentResponse,
+    PlanResponse,
+    ResourceResponse,
+    SimulationRequest,
+    SimulationResponse,
+    TelemetryResponse,
+    TwinResponse,
+    WhatIfRequest,
+    WhatIfResponse,
+    ZoneResponse,
 )
+from app.services.repositories import execution_repo, plan_repo
+from core.safety.engine import SafetyVerifier
+from domains.polyhouse.crops.registry import CropRegistry
+from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
+from schemas.tools import (
+    ControlPlanProposal,
+    ExecutionState,
+)
+
 
 class PhysicaApplicationService:
     def __init__(self) -> None:

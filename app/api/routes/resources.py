@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.api.schemas import ResourceResponse, TelemetryResponse
 from app.services.physica_service import physica_service
 

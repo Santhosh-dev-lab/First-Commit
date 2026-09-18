@@ -1,16 +1,15 @@
-import pytest
 from typing import Any
 
 from compiler.planner.control_plan import ControlPlanBuilder
-from domains.polyhouse.controllers.base import ControlAction, ActionType, ActuatorType
+from domains.polyhouse.controllers.base import ActionType, ActuatorType, ControlAction
+from domains.polyhouse.devices.registry import DeviceRegistry
 from domains.polyhouse.edge.gateway import EdgeGateway
 from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
-from domains.polyhouse.devices.registry import DeviceRegistry
 from schemas.tools import ControlActionProposal, ControlPlanProposal, ExecutionState
 
 
 def test_water_consumption_cannot_exceed_resource() -> None:
-    registry = DeviceRegistry()
+    DeviceRegistry()
     engine = SimulationEngine()
     
     config = SimulationConfig(
@@ -86,7 +85,7 @@ def test_execution_state_transitions() -> None:
 
 
 def test_actuator_causal_physical_state_change() -> None:
-    from domains.polyhouse.controllers.base import Controller, ControlPlan, ControlAction
+    from domains.polyhouse.controllers.base import Controller, ControlPlan
     
     class ForcePumpController(Controller):
         def plan(self, simulation_id: str, timestep: int, time_days: float, zone_contexts: list[Any]) -> ControlPlan:

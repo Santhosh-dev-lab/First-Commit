@@ -1,7 +1,9 @@
 from typing import Any
+
 from fastapi import APIRouter
-from app.services.physica_service import physica_service
+
 from app.api.schemas import TwinResponse
+from app.services.physica_service import physica_service
 
 router = APIRouter()
 

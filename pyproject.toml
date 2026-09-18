@@ -11,6 +11,8 @@ requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0.0",
     "strands-agents>=1.0.0",
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
 ]
 
 [project.optional-dependencies]
@@ -18,7 +20,8 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "mypy"
+    "mypy",
+    "httpx",
 ]
 
 [tool.ruff]

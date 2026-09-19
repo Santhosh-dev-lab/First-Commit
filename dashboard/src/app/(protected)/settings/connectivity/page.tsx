@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Activity, Server, Radio, RefreshCw } from "lucide-react"
 
-import { Card } from "@/components/ui/card"
+import { Card } from "@/components/ui/Card"
 
 export default function ConnectivityPage() {
   const [connectivity, setConnectivity] = useState<any>(null)

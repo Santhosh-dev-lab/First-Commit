@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Server, Activity, Plus } from "lucide-react"
 
-import { Card } from "@/components/ui/card"
+import { Card } from "@/components/ui/Card"
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<any[]>([])

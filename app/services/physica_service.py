@@ -43,7 +43,7 @@ class PhysicaApplicationService:
         self.agent_provider = MockAgentProvider()
         
         self._last_tick = {} # map farm_id -> last_tick time
-        
+
     def _tick_simulation_for_farm(self, farm_data: dict):
         """Advances the local simulation for a farm and routes telemetry to ingestion."""
         from app.services.telemetry_ingestion import telemetry_ingestion_service

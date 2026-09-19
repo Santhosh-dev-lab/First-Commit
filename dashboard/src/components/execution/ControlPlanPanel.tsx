@@ -76,17 +76,17 @@ export function ControlPlanPanel({ planId }: { planId: string | null }) {
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-blue-400">💧</span>
-              <span className="text-white font-bold">{plan.actions[0].action_type}: {plan.actions[0].target_id.replace("_", " ")}</span>
+              <span className="text-white font-bold">{plan.actions[0].action_type}: {(plan.actions[0].target_id || plan.actions[0].actuator_id).replace("_", " ")}</span>
             </div>
             
             <div className="grid grid-cols-4 gap-4 mb-6">
               <div>
                 <div className="text-[9px] text-white/40 font-mono uppercase mb-1">Target</div>
-                <div className="text-white font-mono">{plan.actions[0].value} L</div>
+                <div className="text-white font-mono">{plan.actions[0].value ?? plan.actions[0].target_value} L</div>
               </div>
               <div>
                 <div className="text-[9px] text-white/40 font-mono uppercase mb-1">Duration</div>
-                <div className="text-white font-mono">{plan.actions[0].duration_minutes}m</div>
+                <div className="text-white font-mono">{plan.actions[0].duration_minutes ?? Math.round(plan.actions[0].duration_s / 60)}m</div>
               </div>
               <div>
                 <div className="text-[9px] text-white/40 font-mono uppercase mb-1">Exp Moisture</div>

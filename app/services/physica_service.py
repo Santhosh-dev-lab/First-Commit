@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from agents.base import MockAgentProvider
 from app.api.schemas import (
@@ -45,7 +45,7 @@ class PhysicaApplicationService:
         
         # Persistent interactive demo state
         self._last_tick = time.time()
-        self._persistent_state = {
+        self._persistent_state: dict[str, Any] = {
             "tank_volume_l": 5000.0,
             "pump_state": "IDLE",
             "zones": {
@@ -59,7 +59,7 @@ class PhysicaApplicationService:
             "total_water_unmet": 0.0,
         }
         
-    def _tick_state(self):
+    def _tick_state(self) -> None:
         now = time.time()
         dt = now - self._last_tick
         self._last_tick = now
@@ -153,7 +153,7 @@ class PhysicaApplicationService:
         
     def get_telemetry(self) -> list[TelemetryResponse]:
         self._tick_state()
-        return self._persistent_state["telemetry_history"]
+        return cast(list[TelemetryResponse], self._persistent_state["telemetry_history"])
         
     def get_dashboard_snapshot(self, user_id: str) -> Any:
         from app.api.schemas import (

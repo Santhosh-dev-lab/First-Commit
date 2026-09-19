@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 import uuid
-from typing import Any, cast
+from typing import Any
 
 from agents.base import MockAgentProvider
 from app.api.schemas import (

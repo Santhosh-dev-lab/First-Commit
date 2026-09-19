@@ -6,6 +6,7 @@ from app.services.onboarding_service import (
     DeviceConfig,
     EnvironmentConfig,
     FarmConfig,
+    FarmConnectionConfig,
     OnboardingService,
     OnboardingStatus,
     ResourceConfig,
@@ -54,6 +55,12 @@ def save_resources(req: ResourceConfig, user: UserInfo = Depends(get_current_use
 def save_devices(req: list[DeviceConfig], user: UserInfo = Depends(get_current_user)):
     OnboardingService.save_devices(user.id, req)
     OnboardingService.update_step(user.id, 6)
+    return {"status": "success"}
+
+@router.post("/connection")
+def save_connection(req: FarmConnectionConfig, user: UserInfo = Depends(get_current_user)):
+    OnboardingService.save_connection(user.id, req)
+    OnboardingService.update_step(user.id, 7)
     return {"status": "success"}
 
 @router.post("/complete")

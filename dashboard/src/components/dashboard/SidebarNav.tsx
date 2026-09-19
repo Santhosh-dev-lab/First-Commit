@@ -38,7 +38,7 @@ export function SidebarNav() {
     { name: "Government Schemes", href: "/schemes", icon: Landmark },
     { name: "Reports", href: "/reports", icon: FileText },
     { name: "Devices", href: "/devices", icon: Server },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Connectivity", href: "/settings/connectivity", icon: Settings },
   ]
 
   return (

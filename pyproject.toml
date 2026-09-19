@@ -13,12 +13,16 @@ dependencies = [
     "strands-agents>=1.0.0",
     "fastapi>=0.111.0",
     "uvicorn>=0.30.0",
+    "argon2-cffi>=23.1.0",
+    "email-validator>=2.1.0",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
     "pytest-cov",
+    "pytest-asyncio",
     "ruff",
     "mypy",
     "httpx",
@@ -32,6 +36,9 @@ ignore = ["B008"]
 
 [tool.mypy]
 strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
 packages = [

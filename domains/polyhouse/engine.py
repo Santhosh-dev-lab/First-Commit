@@ -196,6 +196,32 @@ def _energy_step(
     if pump_on: kw += 0.75
     return kw * dt_hours
 
+@dataclass
+class SimulationEngineState:
+    config: SimulationConfig
+    zone_profiles: dict[str, CropProfile]
+    zone_crop_states: dict[str, CropState]
+    zone_moisture: dict[str, float]
+    zone_tank: dict[str, float]
+    zone_water_requested: dict[str, float]
+    zone_water_delivered: dict[str, float]
+    zone_water_unmet: dict[str, float]
+    zone_water_consumed: dict[str, float]
+    temp_c: float
+    hum_pct: float
+    co2_ppm: float
+    par: float
+    total_energy_kwh: float
+    all_violations: list[str]
+    trajectory: list[PolyhouseStep]
+    device_registry: DeviceRegistry
+    gateway: EdgeGateway
+    telemetry_validator: TelemetryValidator
+    state_estimator: StateEstimator
+    twin: PolyhouseTwin
+    current_time_days: float = 0.0
+    current_step_idx: int = 0
+
 
 class SimulationEngine:
     def __init__(
@@ -224,10 +250,7 @@ class SimulationEngine:
             dr.register_actuator(SimulatedVent(f"fogger-{z.zone_id}", z.zone_id))
         return dr
 
-    def run(self, config: SimulationConfig) -> SimulationResult:
-        dt_days = config.dt_hours / 24.0
-        total_steps = math.ceil(config.days / dt_days)
-
+    def initialize_state(self, config: SimulationConfig) -> SimulationEngineState:
         zone_profiles: dict[str, CropProfile] = {z.zone_id: self._registry.get(z.crop_id) for z in config.zones}
         zone_crop_states: dict[str, CropState] = {zone_id: profile.model.initial_state() for zone_id, profile in zone_profiles.items()}
         zone_moisture: dict[str, float] = {z.zone_id: z.initial_substrate_moisture for z in config.zones}
@@ -246,237 +269,252 @@ class SimulationEngine:
         all_violations: list[str] = []
         trajectory: list[PolyhouseStep] = []
 
-        # Setup Edge & Twin
         device_registry = self._setup_devices(config)
         gateway = EdgeGateway(device_registry)
         telemetry_validator = TelemetryValidator()
         state_estimator = StateEstimator()
         twin = PolyhouseTwin(configuration=TwinConfiguration(polyhouse_id=config.simulation_id, zones={}, devices={}))
 
-        # Inject a failure for test scenario if name includes "failure"
         if "failure" in config.scenario_name and config.zones:
                 s = device_registry.get_sensor(f"temp-{config.zones[0].zone_id}")
                 if s:
                     s.failure_mode = SensorFailureMode(mode="BIAS", bias_value=10.0)
 
-        for step_idx in range(total_steps):
-            time_days = step_idx * dt_days
-            now = time.time() + time_days * 86400
+        return SimulationEngineState(
+            config=config,
+            zone_profiles=zone_profiles,
+            zone_crop_states=zone_crop_states,
+            zone_moisture=zone_moisture,
+            zone_tank=zone_tank,
+            zone_water_requested=zone_water_requested,
+            zone_water_delivered=zone_water_delivered,
+            zone_water_unmet=zone_water_unmet,
+            zone_water_consumed=zone_water_consumed,
+            temp_c=temp_c,
+            hum_pct=hum_pct,
+            co2_ppm=co2_ppm,
+            par=par,
+            total_energy_kwh=total_energy_kwh,
+            all_violations=all_violations,
+            trajectory=trajectory,
+            device_registry=device_registry,
+            gateway=gateway,
+            telemetry_validator=telemetry_validator,
+            state_estimator=state_estimator,
+            twin=twin,
+            current_time_days=0.0,
+            current_step_idx=0
+        )
 
-            # 1. Physical to Telemetry (Sensors read actual physical state)
-            telemetry_msgs = []
-            for z in config.zones:
-                for s in device_registry.get_zone_sensors(z.zone_id):
-                    # Ground truth routing
-                    true_val = 0.0
-                    if s.sensor_type == "temperature": true_val = temp_c
-                    elif s.sensor_type == "humidity": true_val = hum_pct
-                    elif s.sensor_type == "co2": true_val = co2_ppm
-                    elif s.sensor_type == "par": true_val = par
-                    elif s.sensor_type == "moisture": true_val = zone_moisture[z.zone_id]
-                    
-                    obs_val, qual = s.read(true_val)
-                    telemetry_msgs.append(TelemetryMessage(
-                        device_id=s.sensor_id,
-                        zone_id=s.zone_id,
-                        timestamp=now,
-                        measurement_type=s.sensor_type,
-                        value=obs_val,
-                        unit=s.unit,
-                        quality=qual
-                    ))
+    def step(self, state: SimulationEngineState, timestamp: float | None = None) -> SimulationEngineState:
+        config = state.config
+        dt_days = config.dt_hours / 24.0
+        time_days = state.current_time_days
+        now = timestamp if timestamp is not None else (time.time() + time_days * 86400)
 
-            # 2. Update Digital Twin
-            raw_telemetry: dict[str, SensorReading] = {}
-            for tmsg in telemetry_msgs:
-                if telemetry_validator.validate(tmsg):
-                    raw_telemetry[tmsg.measurement_type] = SensorReading(
-                        value=tmsg.value, unit=tmsg.unit, timestamp=tmsg.timestamp, quality=tmsg.quality
-                    )
-            twin.current_state = state_estimator.estimate(raw_telemetry, now)
-
-            # 3. Generate ControlPlan based on Twin (Estimated state)
-            zone_contexts: list[ZoneControlContext] = []
-            for z in config.zones:
-                profile = zone_profiles[z.zone_id]
-                est = twin.current_state
+        telemetry_msgs = []
+        for z in config.zones:
+            for s in state.device_registry.get_zone_sensors(z.zone_id):
+                true_val = 0.0
+                if s.sensor_type == "temperature": true_val = state.temp_c
+                elif s.sensor_type == "humidity": true_val = state.hum_pct
+                elif s.sensor_type == "co2": true_val = state.co2_ppm
+                elif s.sensor_type == "par": true_val = state.par
+                elif s.sensor_type == "moisture": true_val = state.zone_moisture[z.zone_id]
                 
-                # Default safe values if missing
-                est_temp = est.environment.get("temperature").value if "temperature" in est.environment else 25.0
-                est_hum = est.environment.get("humidity").value if "humidity" in est.environment else 60.0
-                est_co2 = est.environment.get("co2").value if "co2" in est.environment else 400.0
-                est_par = est.environment.get("par").value if "par" in est.environment else 0.0
-                est_moisture = est.substrate_moisture.value if est.substrate_moisture else 50.0
-
-                ctx = ZoneControlContext(
-                    zone_id=z.zone_id,
-                    crop_id=z.crop_id,
-                    temperature_c=est_temp,
-                    humidity_percent=est_hum,
-                    co2_ppm=est_co2,
-                    par_umol_m2_s=est_par,
-                    substrate_moisture_percent=est_moisture,
-                    tank_volume_liters=zone_tank[z.zone_id],
-                    crop_age_days=zone_crop_states[z.zone_id].age_days,
-                    crop_stage=zone_crop_states[z.zone_id].stage,
-                    crop_stress_index=zone_crop_states[z.zone_id].crop_stress_index,
-                    target_temperature_c=(profile.constraints.temperature.optimal_min + profile.constraints.temperature.optimal_max) / 2.0,
-                    target_humidity_percent=(profile.constraints.humidity.optimal_min + profile.constraints.humidity.optimal_max) / 2.0,
-                    target_moisture_percent=(profile.constraints.substrate_moisture.optimal_min + profile.constraints.substrate_moisture.optimal_max) / 2.0,
-                    target_co2_ppm=(profile.constraints.co2_ppm.optimal_min + profile.constraints.co2_ppm.optimal_max) / 2.0,
-                    target_par_umol_m2_s=400.0,
-                    water_available_l=zone_tank[z.zone_id],
-                    energy_available_kwh=999999.0,
-                )
-                zone_contexts.append(ctx)
-
-            control_plan = self.controller.plan(
-                simulation_id=config.simulation_id,
-                timestep=step_idx,
-                time_days=time_days,
-                zone_contexts=zone_contexts,
-            )
-
-            # 4. Dispatch via EdgeGateway -> EdgeSafetyManager -> Devices
-            commands = gateway.dispatch(control_plan)
-            
-            # Simulated devices respond to EdgeCommands
-            for cmd in commands:
-                act = device_registry.get_actuator(cmd.register_or_topic.split("/")[-2] if "/" in cmd.register_or_topic else cmd.register_or_topic) # simplistic mapping fallback
-                
-                # Better matching: find actuator by id if it matches
-                # Actually, our new gateway sets register to something else? 
-                # Wait, gateway.py logic doesn't cleanly encode the device_id in EdgeCommand unless we added it.
-                # Let's map by action from the plan manually for the simulator device state.
-                # The dispatch simulated Modbus/MQTT. Let's just directly execute the valid_actions from safety manager to SimulatedDevices for simplicity.
-
-            valid_actions = control_plan.actions
-            if gateway.safety_manager:
-                valid_actions = gateway.safety_manager.validate_plan(control_plan)
-
-            for act_cmd in valid_actions:
-                act = device_registry.get_actuator(act_cmd.actuator_id)
-                if act:
-                    target = 1.0 if act_cmd.action_type == ActionType.SET_ON else 0.0 if act_cmd.action_type == ActionType.SET_OFF else act_cmd.target_value
-                    act.execute(target)
-
-            # Climate Step (done once outside the loop for the polyhouse)
-            fan_on, vent_pct, heater_on, fogger_on = False, 0.0, False, False
-            pump_flow = 0.0
-            if config.zones:
-                # Use first zone's actuators to drive shared climate
-                z1 = config.zones[0].zone_id
-                fan = device_registry.get_actuator(f"fan-{z1}")
-                vent = device_registry.get_actuator(f"vent-{z1}")
-                heater = device_registry.get_actuator(f"heater-{z1}")
-                fogger = device_registry.get_actuator(f"fogger-{z1}")
-                fan_on = fan.state > 0.0 if fan else False
-                vent_pct = vent.state * 100.0 if vent else 0.0
-                heater_on = heater.state > 0.0 if heater else False
-                fogger_on = fogger.state > 0.0 if fogger else False
-
-            temp_c, hum_pct = _climate_step(
-                temp_c, hum_pct, config.outside_temperature_c, config.outside_humidity_percent,
-                fan_on, vent_pct, heater_on, fogger_on, config.dt_hours
-            )
-
-            total_energy_kwh += _energy_step(fan_on, heater_on, fogger_on, False, config.dt_hours)
-
-            zone_steps: dict[str, ZoneStep] = {}
-            for z in config.zones:
-                pump = device_registry.get_actuator(f"pump-{z.zone_id}")
-                pump_flow = pump.current_flow() if isinstance(pump, SimulatedPump) else 0.0
-                total_energy_kwh += _energy_step(False, False, False, pump_flow > 0, config.dt_hours)
-
-                profile = zone_profiles[z.zone_id]
-                crop_state = zone_crop_states[z.zone_id]
-                moisture = zone_moisture[z.zone_id]
-                tank = zone_tank[z.zone_id]
-                num_plants = z.area_sqm * z.plant_density_per_sqm
-                
-                stress_mod = profile.stress_model.calculate_modifier(temp_c, hum_pct, co2_ppm, moisture, profile.constraints)
-                water_avail_per_plant = (moisture / 100.0) * 2.0 * dt_days
-
-                twin.current_state = TwinCurrentState(
+                obs_val, qual = s.read(true_val)
+                telemetry_msgs.append(TelemetryMessage(
+                    device_id=s.sensor_id,
+                    zone_id=s.zone_id,
                     timestamp=now,
-                    environment={
-                        "temperature": StateVariable(value=temp_c, unit="C", source=StateSource.OBSERVED),
-                        "humidity": StateVariable(value=hum_pct, unit="%", source=StateSource.OBSERVED),
-                    },
-                    crop_biomass_kg=StateVariable(value=0.0, unit="kg", source=StateSource.ESTIMATED),
-                    substrate_moisture=StateVariable(
-                        value=zone_moisture[next(iter(zone_moisture.keys()))] if zone_moisture else 0.0, 
-                        unit="%", source=StateSource.OBSERVED
-                    ),
-                    tank_volume=StateVariable(
-                        value=zone_tank[next(iter(zone_tank.keys()))] if zone_tank else 0.0,
-                        unit="L", source=StateSource.OBSERVED
-                    )
-                )
-
-                new_crop_state = profile.model.step(
-                    current=crop_state,
-                    temperature_c=temp_c,
-                    humidity_percent=hum_pct,
-                    co2_ppm=co2_ppm,
-                    par_umol_m2_s=par,
-                    substrate_moisture_percent=moisture,
-                    water_available_l=water_avail_per_plant,
-                    stress_modifier=stress_mod,
-                    dt_days=dt_days,
-                )
-
-                new_moisture, new_tank, req_w, del_w, unmet_w = _irrigation_step(
-                    moisture, tank, pump_flow, new_crop_state.water_uptake_l_per_day, num_plants, dt_days
-                )
-
-                zone_crop_states[z.zone_id] = new_crop_state
-                zone_moisture[z.zone_id] = new_moisture
-                zone_tank[z.zone_id] = new_tank
-                zone_water_requested[z.zone_id] += req_w
-                zone_water_delivered[z.zone_id] += del_w
-                zone_water_unmet[z.zone_id] += unmet_w
-                zone_water_consumed[z.zone_id] += del_w
-
-                c = profile.constraints
-                if temp_c > c.temperature.max_val:
-                    all_violations.append(f"t={time_days:.1f}d zone={z.zone_id}: temp {temp_c:.1f}°C > max {c.temperature.max_val}°C")
-                if temp_c < c.temperature.min_val:
-                    all_violations.append(f"t={time_days:.1f}d zone={z.zone_id}: temp {temp_c:.1f}°C < min {c.temperature.min_val}°C")
-
-                zone_steps[z.zone_id] = ZoneStep(
-                    zone_id=z.zone_id, crop_id=z.crop_id, crop_state=new_crop_state,
-                    substrate_moisture_percent=new_moisture, 
-                    water_requested_l=req_w, water_delivered_l=del_w, water_unmet_l=unmet_w,
-                    water_consumed_l=del_w,
-                )
-
-            if step_idx % max(1, int(24 / config.dt_hours)) == 0:
-                trajectory.append(PolyhouseStep(
-                    timestep=step_idx, time_days=time_days, temperature_c=temp_c,
-                    humidity_percent=hum_pct, co2_ppm=co2_ppm, par_umol_m2_s=par,
-                    zones=zone_steps, cumulative_water_l=sum(zone_water_consumed.values()),
-                    cumulative_energy_kwh=total_energy_kwh,
+                    measurement_type=s.sensor_type,
+                    value=obs_val,
+                    unit=s.unit,
+                    quality=qual
                 ))
 
+        raw_telemetry: dict[str, SensorReading] = {}
+        for tmsg in telemetry_msgs:
+            if state.telemetry_validator.validate(tmsg):
+                raw_telemetry[tmsg.measurement_type] = SensorReading(
+                    value=tmsg.value, unit=tmsg.unit, timestamp=tmsg.timestamp, quality=tmsg.quality
+                )
+        state.twin.current_state = state.state_estimator.estimate(raw_telemetry, now)
+
+        zone_contexts: list[ZoneControlContext] = []
+        for z in config.zones:
+            profile = state.zone_profiles[z.zone_id]
+            est = state.twin.current_state
+            
+            est_temp = est.environment.get("temperature").value if "temperature" in est.environment else 25.0
+            est_hum = est.environment.get("humidity").value if "humidity" in est.environment else 60.0
+            est_co2 = est.environment.get("co2").value if "co2" in est.environment else 400.0
+            est_par = est.environment.get("par").value if "par" in est.environment else 0.0
+            est_moisture = est.substrate_moisture.value if est.substrate_moisture else 50.0
+
+            ctx = ZoneControlContext(
+                zone_id=z.zone_id,
+                crop_id=z.crop_id,
+                temperature_c=est_temp,
+                humidity_percent=est_hum,
+                co2_ppm=est_co2,
+                par_umol_m2_s=est_par,
+                substrate_moisture_percent=est_moisture,
+                tank_volume_liters=state.zone_tank[z.zone_id],
+                crop_age_days=state.zone_crop_states[z.zone_id].age_days,
+                crop_stage=state.zone_crop_states[z.zone_id].stage,
+                crop_stress_index=state.zone_crop_states[z.zone_id].crop_stress_index,
+                target_temperature_c=(profile.constraints.temperature.optimal_min + profile.constraints.temperature.optimal_max) / 2.0,
+                target_humidity_percent=(profile.constraints.humidity.optimal_min + profile.constraints.humidity.optimal_max) / 2.0,
+                target_moisture_percent=(profile.constraints.substrate_moisture.optimal_min + profile.constraints.substrate_moisture.optimal_max) / 2.0,
+                target_co2_ppm=(profile.constraints.co2_ppm.optimal_min + profile.constraints.co2_ppm.optimal_max) / 2.0,
+                target_par_umol_m2_s=400.0,
+                water_available_l=state.zone_tank[z.zone_id],
+                energy_available_kwh=999999.0,
+            )
+            zone_contexts.append(ctx)
+
+        control_plan = self.controller.plan(
+            simulation_id=config.simulation_id,
+            timestep=state.current_step_idx,
+            time_days=time_days,
+            zone_contexts=zone_contexts,
+        )
+
+        state.gateway.dispatch(control_plan)
+
+        valid_actions = control_plan.actions
+        if state.gateway.safety_manager:
+            valid_actions = state.gateway.safety_manager.validate_plan(control_plan)
+
+        for act_cmd in valid_actions:
+            act = state.device_registry.get_actuator(act_cmd.actuator_id)
+            if act:
+                target = 1.0 if act_cmd.action_type == ActionType.SET_ON else 0.0 if act_cmd.action_type == ActionType.SET_OFF else act_cmd.target_value
+                act.execute(target)
+
+        fan_on, vent_pct, heater_on, fogger_on = False, 0.0, False, False
+        pump_flow = 0.0
+        if config.zones:
+            z1 = config.zones[0].zone_id
+            fan = state.device_registry.get_actuator(f"fan-{z1}")
+            vent = state.device_registry.get_actuator(f"vent-{z1}")
+            heater = state.device_registry.get_actuator(f"heater-{z1}")
+            fogger = state.device_registry.get_actuator(f"fogger-{z1}")
+            fan_on = fan.state > 0.0 if fan else False
+            vent_pct = vent.state * 100.0 if vent else 0.0
+            heater_on = heater.state > 0.0 if heater else False
+            fogger_on = fogger.state > 0.0 if fogger else False
+
+        state.temp_c, state.hum_pct = _climate_step(
+            state.temp_c, state.hum_pct, config.outside_temperature_c, config.outside_humidity_percent,
+            fan_on, vent_pct, heater_on, fogger_on, config.dt_hours
+        )
+
+        state.total_energy_kwh += _energy_step(fan_on, heater_on, fogger_on, False, config.dt_hours)
+
+        zone_steps: dict[str, ZoneStep] = {}
+        for z in config.zones:
+            pump = state.device_registry.get_actuator(f"pump-{z.zone_id}")
+            pump_flow = pump.current_flow() if isinstance(pump, SimulatedPump) else 0.0
+            state.total_energy_kwh += _energy_step(False, False, False, pump_flow > 0, config.dt_hours)
+
+            profile = state.zone_profiles[z.zone_id]
+            crop_state = state.zone_crop_states[z.zone_id]
+            moisture = state.zone_moisture[z.zone_id]
+            tank = state.zone_tank[z.zone_id]
+            num_plants = z.area_sqm * z.plant_density_per_sqm
+            
+            stress_mod = profile.stress_model.calculate_modifier(state.temp_c, state.hum_pct, state.co2_ppm, moisture, profile.constraints)
+            water_avail_per_plant = (moisture / 100.0) * 2.0 * dt_days
+
+            state.twin.current_state = TwinCurrentState(
+                timestamp=now,
+                environment={
+                    "temperature": StateVariable(value=state.temp_c, unit="C", source=StateSource.OBSERVED),
+                    "humidity": StateVariable(value=state.hum_pct, unit="%", source=StateSource.OBSERVED),
+                },
+                crop_biomass_kg=StateVariable(value=0.0, unit="kg", source=StateSource.ESTIMATED),
+                substrate_moisture=StateVariable(
+                    value=state.zone_moisture[next(iter(state.zone_moisture.keys()))] if state.zone_moisture else 0.0, 
+                    unit="%", source=StateSource.OBSERVED
+                ),
+                tank_volume=StateVariable(
+                    value=state.zone_tank[next(iter(state.zone_tank.keys()))] if state.zone_tank else 0.0,
+                    unit="L", source=StateSource.OBSERVED
+                )
+            )
+
+            new_crop_state = profile.model.step(
+                current=crop_state,
+                temperature_c=state.temp_c,
+                humidity_percent=state.hum_pct,
+                co2_ppm=state.co2_ppm,
+                par_umol_m2_s=state.par,
+                substrate_moisture_percent=moisture,
+                water_available_l=water_avail_per_plant,
+                stress_modifier=stress_mod,
+                dt_days=dt_days,
+            )
+
+            new_moisture, new_tank, req_w, del_w, unmet_w = _irrigation_step(
+                moisture, tank, pump_flow, new_crop_state.water_uptake_l_per_day, num_plants, dt_days
+            )
+
+            state.zone_crop_states[z.zone_id] = new_crop_state
+            state.zone_moisture[z.zone_id] = new_moisture
+            state.zone_tank[z.zone_id] = new_tank
+            state.zone_water_requested[z.zone_id] += req_w
+            state.zone_water_delivered[z.zone_id] += del_w
+            state.zone_water_unmet[z.zone_id] += unmet_w
+            state.zone_water_consumed[z.zone_id] += del_w
+
+            c = profile.constraints
+            if state.temp_c > c.temperature.max_val:
+                state.all_violations.append(f"t={time_days:.1f}d zone={z.zone_id}: temp {state.temp_c:.1f}°C > max {c.temperature.max_val}°C")
+            if state.temp_c < c.temperature.min_val:
+                state.all_violations.append(f"t={time_days:.1f}d zone={z.zone_id}: temp {state.temp_c:.1f}°C < min {c.temperature.min_val}°C")
+
+            zone_steps[z.zone_id] = ZoneStep(
+                zone_id=z.zone_id, crop_id=z.crop_id, crop_state=new_crop_state,
+                substrate_moisture_percent=new_moisture, 
+                water_requested_l=req_w, water_delivered_l=del_w, water_unmet_l=unmet_w,
+                water_consumed_l=del_w,
+            )
+
+        if state.current_step_idx % max(1, int(24 / config.dt_hours)) == 0:
+            state.trajectory.append(PolyhouseStep(
+                timestep=state.current_step_idx, time_days=time_days, temperature_c=state.temp_c,
+                humidity_percent=state.hum_pct, co2_ppm=state.co2_ppm, par_umol_m2_s=state.par,
+                zones=zone_steps, cumulative_water_l=sum(state.zone_water_consumed.values()),
+                cumulative_energy_kwh=state.total_energy_kwh,
+            ))
+
+        state.current_time_days += dt_days
+        state.current_step_idx += 1
+
+        return state
+
+    def finalize_state(self, state: SimulationEngineState) -> SimulationResult:
+        config = state.config
         zone_results: list[ZoneResult] = []
         for z in config.zones:
-            profile = zone_profiles[z.zone_id]
-            final_state = zone_crop_states[z.zone_id]
+            profile = state.zone_profiles[z.zone_id]
+            final_state = state.zone_crop_states[z.zone_id]
             harvest = profile.harvest_model.assess(final_state, profile.model.parameters())
             zone_results.append(ZoneResult(
                 zone_id=z.zone_id, crop_id=z.crop_id, crop_model_version=profile.model.model_version,
                 final_stage=final_state.stage, final_biomass_kg=final_state.biomass_kg,
                 final_harvestable_biomass_kg=final_state.harvestable_biomass_kg,
                 final_stress_index=final_state.crop_stress_index,
-                total_water_requested_l=zone_water_requested[z.zone_id],
-                total_water_delivered_l=zone_water_delivered[z.zone_id],
-                total_water_unmet_l=zone_water_unmet[z.zone_id],
-                total_water_consumed_l=zone_water_consumed[z.zone_id],
-                harvest_ready=harvest.is_ready, trajectory_points=len(trajectory),
+                total_water_requested_l=state.zone_water_requested[z.zone_id],
+                total_water_delivered_l=state.zone_water_delivered[z.zone_id],
+                total_water_unmet_l=state.zone_water_unmet[z.zone_id],
+                total_water_consumed_l=state.zone_water_consumed[z.zone_id],
+                harvest_ready=harvest.is_ready, trajectory_points=len(state.trajectory),
             ))
 
-        total_water = sum(zone_water_consumed.values())
+        total_water = sum(state.zone_water_consumed.values())
         avg_stress = (sum(r.final_stress_index for r in zone_results) / len(zone_results) if zone_results else 0.0)
         total_harvestable = sum(r.final_harvestable_biomass_kg for r in zone_results)
 
@@ -487,14 +525,27 @@ class SimulationEngine:
             simulation_id=config.simulation_id, scenario_name=config.scenario_name,
             provenance_hash=prov_hash, total_days_simulated=config.days,
             zone_results=zone_results, total_water_liters=total_water,
-            violations=len(all_violations),
+            violations=len(state.all_violations),
             stress_index=avg_stress,
             water_used_l=total_water,
             requested_water_l=sum(z.total_water_requested_l for z in zone_results),
             delivered_water_l=sum(z.total_water_delivered_l for z in zone_results),
             unmet_water_demand_l=sum(z.total_water_unmet_l for z in zone_results),
-            remaining_water_l=sum(zone_tank.values()),
-            total_energy_kwh=total_energy_kwh, average_stress=avg_stress,
-            constraint_violations=list(set(all_violations))[:20],
-            final_yield_kg=total_harvestable, extra={"trajectory_points": len(trajectory), "final_twin": twin},
+            remaining_water_l=sum(state.zone_tank.values()),
+            total_energy_kwh=state.total_energy_kwh, average_stress=avg_stress,
+            constraint_violations=list(set(state.all_violations))[:20],
+            final_yield_kg=total_harvestable, extra={"trajectory_points": len(state.trajectory), "final_twin": state.twin, "trajectory": state.trajectory},
         )
+
+    def run(self, config: SimulationConfig) -> SimulationResult:
+        dt_days = config.dt_hours / 24.0
+        total_steps = math.ceil(config.days / dt_days)
+        
+        state = self.initialize_state(config)
+        
+        for step_idx in range(total_steps):
+            time_days = step_idx * dt_days
+            now = time.time() + time_days * 86400
+            self.step(state, timestamp=now)
+            
+        return self.finalize_state(state)

@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 
 class IntentRequest(BaseModel):
-    text: str = Field(description="Natural language instruction for the farm")
-    zone_id: str | None = Field(default=None, description="Optional target zone identifier")
+    text: str = Field(description="Natural language instruction for the farm", min_length=2, max_length=1000)
+    zone_id: str | None = Field(default=None, description="Optional target zone identifier", max_length=100)
 
 class IntentResponse(BaseModel):
     objective: str
@@ -14,10 +14,10 @@ class IntentResponse(BaseModel):
     plan_id: str | None = None
 
 class SimulationRequest(BaseModel):
-    scenario_name: str
-    days: int
-    dt_hours: float = 1.0
-    zone_ids: list[str]
+    scenario_name: str = Field(min_length=1, max_length=100)
+    days: int = Field(ge=1, le=365)
+    dt_hours: float = Field(default=1.0, ge=0.1, le=24.0)
+    zone_ids: list[str] = Field(max_length=20)
 
 class SimulationResponse(BaseModel):
     simulation_id: str
@@ -34,10 +34,10 @@ class SimulationResponse(BaseModel):
     final_yield_kg: float
 
 class WhatIfRequest(BaseModel):
-    days: int
-    zone_ids: list[str]
-    water_availability_l: float | None = None
-    temperature_bias_c: float | None = None
+    days: int = Field(ge=1, le=365)
+    zone_ids: list[str] = Field(max_length=20)
+    water_availability_l: float | None = Field(default=None, ge=0.0, le=1000000.0)
+    temperature_bias_c: float | None = Field(default=None, ge=-50.0, le=50.0)
 
 class WhatIfResponse(BaseModel):
     baseline: SimulationResponse

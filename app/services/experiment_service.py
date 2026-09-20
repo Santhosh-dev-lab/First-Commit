@@ -11,6 +11,7 @@ from domains.polyhouse.controllers.baseline import BaselineController
 from domains.polyhouse.controllers.factory import get_policy
 from domains.polyhouse.crops.registry import CropRegistry
 from domains.polyhouse.engine import SimulationConfig, SimulationEngine, ZoneSimConfig
+from schemas.autonomy import PlanningStateSnapshot
 from schemas.experiments import (
     CandidateResult,
     CandidateStrategy,
@@ -113,23 +114,41 @@ class ExperimentService:
         weights: ObjectiveWeights, 
         scenario: str,
         seed: int = 42,
-        days: int = 7
+        days: float = 7.0,
+        snapshot: PlanningStateSnapshot | None = None
     ) -> ExperimentRecord:
         
         db_zones = self._get_farm_zones(farm_id)
         zone_configs = []
         for z in db_zones:
+            tank_vol = 5000.0
+            if snapshot and z["id"] in snapshot.resource_state.get("tank_volumes", {}):
+                tank_vol = snapshot.resource_state["tank_volumes"][z["id"]]
+            elif scenario == "DROUGHT":
+                tank_vol = 0.0
+                
             zone_configs.append(ZoneSimConfig(
                 zone_id=z["id"],
                 crop_id=z["crop_id"] or "dwarf_tomato",
                 area_sqm=z["area_m2"],
                 plant_density_per_sqm=5.0,
-                initial_tank_volume_liters=0.0 if scenario == "DROUGHT" else 5000.0,
+                initial_tank_volume_liters=tank_vol,
             ))
 
         candidates = self.generate_candidates(objective)
         
         # Fair comparison context
+        if snapshot:
+            initial_temp = snapshot.environment.get("temperature_c", 25.0)
+            initial_hum = snapshot.environment.get("humidity_percent", 60.0)
+            out_temp = snapshot.environment.get("outside_temperature_c", 22.0)
+            out_hum = snapshot.environment.get("outside_humidity_percent", 50.0)
+        else:
+            initial_temp = 50.0 if scenario == "EXTREME_HEAT" else 25.0
+            initial_hum = 60.0
+            out_temp = 80.0 if scenario == "EXTREME_HEAT" else (30.0 if scenario == "WATER_SHORTAGE" else 22.0)
+            out_hum = 50.0
+            
         base_sim_config = SimulationConfig(
             simulation_id=f"sim-{uuid.uuid4().hex[:8]}",
             scenario_name=scenario,
@@ -137,10 +156,10 @@ class ExperimentService:
             dt_hours=1.0,
             seed=seed,
             zones=zone_configs,
-            initial_temperature_c=50.0 if scenario == "EXTREME_HEAT" else 25.0,
-            initial_humidity_percent=60.0,
-            outside_temperature_c=80.0 if scenario == "EXTREME_HEAT" else (30.0 if scenario == "WATER_SHORTAGE" else 22.0),
-            outside_humidity_percent=50.0
+            initial_temperature_c=initial_temp,
+            initial_humidity_percent=initial_hum,
+            outside_temperature_c=out_temp,
+            outside_humidity_percent=out_hum
         )
 
         candidate_results = []
@@ -287,7 +306,7 @@ class ExperimentService:
         experiment_repo.save(experiment)
         return experiment
 
-    def execute_selected_strategy(self, experiment_id: str, farm_id: str, user_id: str) -> dict[str, Any]:
+    def execute_selected_strategy(self, experiment_id: str, farm_id: str, user_id: str, execution_horizon_hours: float = 4.0) -> dict[str, Any]:
         experiment = experiment_repo.get(experiment_id)
         if not experiment:
             raise ValueError("Experiment not found")
@@ -379,7 +398,7 @@ class ExperimentService:
         self.physica_service.dispatch_plan(plan_id, farm_id=farm_id)
         
         experiment.execution_status = "EXECUTED"
-        experiment.outcome = {"dispatched_plan_id": plan_id, "execution_horizon_hours": 4.0}
+        experiment.outcome = {"dispatched_plan_id": plan_id, "execution_horizon_hours": execution_horizon_hours}
         experiment_repo.save(experiment)
         
         return {"status": "SUCCESS", "plan_id": plan_id}

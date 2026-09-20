@@ -12,6 +12,7 @@ from app.api.middleware.request_id import RequestIDMiddleware
 from app.api.routes import (
     agents,
     auth,
+    autonomy,
     connectivity,
     dashboard,
     devices,
@@ -72,6 +73,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(twin.router, prefix="/api", tags=["twin"])
+app.include_router(autonomy.router, prefix="/api/autonomy", tags=["autonomy"])
 app.include_router(agents.router, prefix="/api", tags=["agents"])
 app.include_router(simulation.router, prefix="/api", tags=["simulation"])
 app.include_router(execution.router, prefix="/api", tags=["execution"])
